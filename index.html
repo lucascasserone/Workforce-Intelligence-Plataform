@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MVP 4 — Workforce Intelligence (Skill Mapping)</title>
+  <meta name="description" content="MVP: leitura de CV, evidências e confiança por skill, radar de gaps atual vs alvo, autoavaliação e timeline." />
+  <style>
+    :root{
+      --bg:#0f172a; --card:#111827; --card-2:#0b1221;
+      --muted:#94a3b8; --text:#e5e7eb;
+      --accent:#22c55e; --accent-2:#38bdf8; --accent-3:#f59e0b;
+      --danger:#ef4444; --warn:#f59e0b;
+      --border: rgba(148,163,184,.25); --border-soft: rgba(148,163,184,.15);
+      --shadow: rgba(0,0,0,.35); --btn-bg: linear-gradient(135deg, rgba(34,197,94,.15), rgba(56,189,248,.15));
+      --btn-border: rgba(56,189,248,.25); --surface:#0a1222;
+      --success:#34d399; --warning:#fbbf24; --error:#f87171;
+
+      /* Glassmorphism */
+      --glass-bg: rgba(255,255,255,0.06);
+      --glass-border: rgba(255,255,255,0.18);
+      --glass-blur: 12px;
+
+      /* Pulse */
+      --pulse-color: rgba(239,68,68,.45);
+    }
+    html[data-theme="light"]{
+      --bg:#f8fafc; --card:#ffffff; --card-2:#f1f5f9;
+      --muted:#475569; --text:#0f172a;
+      --accent:#16a34a; --accent-2:#0284c7; --accent-3:#d97706;
+      --danger:#dc2626; --warn:#d97706;
+      --border: rgba(15,23,42,.15); --border-soft: rgba(15,23,42,.10);
+      --shadow: rgba(0,0,0,.1); --btn-bg: linear-gradient(135deg, rgba(22,163,74,.12), rgba(2,132,199,.12));
+      --btn-border: rgba(2,132,199,.25); --surface:#eef2f7;
+      --success:#15803d; --warning:#b45309; --error:#b91c1c;
+
+      --glass-bg: rgba(255,255,255,0.55);
+      --glass-border: rgba(15,23,42,0.15);
+      --glass-blur: 10px;
+      --pulse-color: rgba(220,38,38,.35);
+    }
+
+    html,body{height:100%}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background:
+        radial-gradient(1200px 600px at 80% -10%, color-mix(in oklab, var(--accent-2) 25%, transparent), transparent 60%) ,
+        radial-gradient(1200px 700px at -10% 20%, color-mix(in oklab, var(--accent) 18%, transparent), transparent 60%),
+        var(--bg);
+      color:var(--text);
+    }
+    .container{max-width:1350px; margin:0 auto; padding:24px}
+    header{display:flex; gap:16px; align-items:center; justify-content:space-between; margin-bottom:16px}
+    .brand{display:flex; gap:12px; align-items:center}
+    .brand-logo{
+      width:40px;height:40px;border-radius:10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 10px 30px color-mix(in oklab, var(--accent-2) 25%, transparent);
+    }
+    .brand h1{font-size:20px; margin:0}
+    .subtitle{color:var(--muted); font-size:14px}
+
+    .grid{display:grid; grid-template-columns: 1fr; gap:16px;}
+    @media(min-width: 1100px){ .grid{grid-template-columns: 1.1fr 1fr;} }
+    .card{
+      background: linear-gradient(180deg, color-mix(in oklab, var(--card) 92%, transparent), color-mix(in oklab, var(--card-2) 92%, transparent));
+      border:1px solid var(--border-soft);
+      border-radius:14px; padding:16px; backdrop-filter: blur(6px);
+      box-shadow: 0 8px 24px var(--shadow);
+    }
+    .card h2{margin:0 0 12px 0; font-size:18px}
+    .section{display:flex; flex-direction:column; gap:12px}
+    label{font-weight:600}
+    input[type="file"], select, button, textarea{
+      width:100%; border-radius:10px; border:1px solid var(--border);
+      background: var(--surface); color:var(--text); padding:10px 12px;
+    }
+    textarea{min-height:120px; resize:vertical}
+    button{
+      cursor:pointer; font-weight:600; letter-spacing:.25px;
+      background: var(--btn-bg); border:1px solid var(--btn-border);
+      transition:.2s transform ease, .2s filter ease, .2s background ease;
+    }
+    button:hover{transform: translateY(-1px); filter: brightness(1.06)}
+    .actions{display:flex; gap:8px; flex-wrap:wrap}
+    .btn-primary{background: linear-gradient(135deg, var(--accent), var(--accent-2)); border:none; color:white}
+    .btn-danger{background: linear-gradient(135deg, var(--danger), var(--warn)); border:none; color:#fff}
+    .pill{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted); font-size:12px; background:var(--surface);}
+    .muted{color:var(--muted)}
+    .code{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background:var(--surface); border:1px dashed var(--border); padding:8px 10px; border-radius:8px; display:block}
+    .footer{margin-top:20px; color:var(--muted); font-size:12px; text-align:center}
+
+    .kpi{display:flex; gap:10px; flex-wrap:wrap}
+    .kpi .card{
+      min-width:240px;
+      background: var(--glass-bg); 
+      border:1px solid var(--glass-border);
+      box-shadow: 0 10px 40px rgba(0,0,0,.18);
+      backdrop-filter: blur(var(--glass-blur)) saturate(130%);
+    }
+    .progress{width:100%; height:8px; background:var(--surface); border-radius:999px; overflow:hidden; border:1px solid var(--border)}
+    .progress > div{height:100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); width:0%}
+    .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0}
+
+    /* Dropzone */
+    .dropzone{
+      border:2px dashed var(--border);
+      background: color-mix(in oklab, var(--surface) 80%, transparent);
+      border-radius:12px; padding:14px; text-align:center; color:var(--muted);
+      transition: .2s ease border-color, .2s ease background;
+    }
+    .dropzone.is-dragover{ border-color: var(--accent-2); background: color-mix(in oklab, var(--accent-2) 12%, var(--surface)); color: var(--text); }
+
+    /* Badges gap */
+    .badge{padding:2px 8px; border-radius:999px; font-size:12px; font-weight:700}
+    .gap-ok{background: color-mix(in oklab, var(--accent) 15%, transparent); color:var(--success)}
+    .gap-mid{background: color-mix(in oklab, var(--warn) 15%, transparent); color:var(--warning)}
+    .gap-high{background: color-mix(in oklab, var(--danger) 15%, transparent); color:var(--error)}
+
+    /* Pulse para gaps críticos core */
+    @keyframes pulseCritical {
+      0% { box-shadow: 0 0 0 0 var(--pulse-color); }
+      70% { box-shadow: 0 0 0 12px rgba(0,0,0,0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); }
+    }
+    .pulse-core { animation: pulseCritical 1.8s infinite; border-radius: 10px; }
+
+    /* Radar layout */
+    .legend{display:flex; gap:10px; align-items:center; flex-wrap:wrap; color:var(--muted); font-size:13px}
+    .legend .dot{width:12px; height:12px; border-radius:99px; display:inline-block}
+
+    /* Modal evidências */
+    .modal-backdrop{position:fixed; inset:0; background: rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; padding:16px; z-index:999}
+    .modal{max-width:700px; width:100%; background:var(--card); color:var(--text); border:1px solid var(--border-soft); border-radius:14px; box-shadow: 0 10px 40px var(--shadow); padding:16px; }
+    .modal h3{margin-top:0}
+    .chips{display:flex; gap:6px; flex-wrap:wrap}
+    .chip{font-size:12px; padding:4px 8px; border-radius:999px; background:var(--surface); border:1px solid var(--border); color:var(--muted)}
+    .evidence{background:var(--surface); border:1px solid var(--border-soft); border-radius:10px; padding:10px; margin:6px 0}
+
+    /* ===== Ajustes pedidos ===== */
+    /* 1) Limitar altura do bloco de JSON com rolagem */
+    #skillsJson { max-height: 260px; overflow: auto; border-radius: 10px; }
+    /* Opcional: limitar autoavaliação para não esticar a página */
+    #selfWrap   { max-height: 280px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand" aria-label="Identidade do produto">
+        <div class="brand-logo" aria-hidden="true"></div>
+        <div>
+          <h1>MVP 4 — Workforce Intelligence</h1>
+          <div class="subtitle">Evidências & Confiança • Radar (Atual x Desejado x Alvo) • Autoavaliação • Timeline</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button id="themeToggle" class="pill" aria-pressed="false" aria-label="Alternar tema">🌙 Modo escuro</button>
+        <div class="pill" title="Idioma">🌐 pt-BR</div>
+      </div>
+    </header>
+
+    <div class="grid" role="main">
+      <!-- Coluna esquerda -->
+      <section class="card section" aria-labelledby="sec-upload">
+        <h2 id="sec-upload">1) Upload e leitura de CV</h2>
+        <p class="muted">Arraste e solte um arquivo aqui, ou selecione manualmente. Aceita PDF, DOCX e TXT.</p>
+
+        <div id="dropZone" class="dropzone" role="button" tabindex="0" aria-label="Solte o arquivo do currículo aqui ou pressione Enter para selecionar">
+          📄 Arraste e solte o CV aqui — ou <strong>pressione Enter</strong> para escolher um arquivo
+        </div>
+        <input id="cvFile" type="file" accept=".pdf,.doc,.docx,.txt" aria-label="Enviar currículo" style="position:absolute; left:-9999px; width:1px; height:1px;" />
+
+        <div class="actions">
+          <button id="btnExtract" class="btn-primary">Extrair skills do CV</button>
+          <button id="btnSelf" title="Autoavaliação antes de ver a IA">Iniciar Autoavaliação</button>
+          <button id="btnClear" class="btn-danger">Limpar</button>
+          <button id="btnExport">Exportar JSON</button>
+        </div>
+
+        <label for="cvText">Texto do CV (preview)</label>
+        <textarea id="cvText" placeholder="O texto extraído do CV aparecerá aqui. Você também pode colar/editar manualmente."></textarea>
+
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <span class="pill">Status: <span id="status" aria-live="polite" aria-atomic="true">Aguardando upload</span></span>
+          <div>
+            <label for="roleSelect" class="sr-only">Cargo atual</label>
+            <select id="roleSelect" aria-label="Cargo atual">
+              <option value="data-analyst">Analista de Dados</option>
+              <option value="planner" selected>Planner</option>
+              <option value="project-manager">Project Manager</option>
+              <option value="backend-dev">Desenvolvedor Backend</option>
+            </select>
+            <div class="muted">Cargo atual (salvo automaticamente)</div>
+          </div>
+          <div>
+            <label for="targetRoleSelect" class="sr-only">Cargo alvo</label>
+            <select id="targetRoleSelect" aria-label="Cargo alvo (próximo passo)">
+              <option value="data-manager">Gerente de Dados</option>
+              <option value="product-manager">Product Manager</option>
+              <option value="engineering-manager">Engineering Manager</option>
+              <option value="planner-senior">Planner Sênior</option>
+            </select>
+            <div class="muted">Cargo alvo (simulação de promoção)</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Coluna direita -->
+      <section class="card section" aria-labelledby="sec-skills">
+        <h2 id="sec-skills">2) Skills extraídas (IA) & Autoavaliação</h2>
+        <p class="muted">Com confiança e evidências por skill. Conflitos IA vs. humano são sinalizados.</p>
+        <pre id="skillsJson" class="code" aria-live="polite" aria-atomic="true">{}</pre>
+        <div class="actions">
+          <!-- Toggle para ocultar/mostrar o JSON -->
+          <button id="btnToggleJson" aria-expanded="true" aria-controls="skillsJson">Recolher JSON</button>
+          <button id="btnNormalize">Normalizar (semântica) & Mapear</button>
+        </div>
+
+        <div id="selfWrap" class="card" style="display:none;">
+          <div style="font-weight:700; margin-bottom:6px;">Autoavaliação</div>
+          <div id="selfForm" class="section"></div>
+          <div class="muted">Dica: ajuste suas notas; depois compare com a IA.</div>
+        </div>
+      </section>
+
+      <!-- Radar -->
+      <section class="card section" aria-labelledby="sec-radar" style="grid-column: 1 / -1;">
+        <h2 id="sec-radar">3) Visual Gap (Radar)</h2>
+        <p class="muted">Comparação entre <strong>Perfil Atual</strong>, <strong>Esperado (Cargo atual)</strong> e <strong>Esperado (Cargo alvo)</strong>.</p>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center" class="legend">
+          <span><span class="dot" style="background:#38bdf8"></span> Atual</span>
+          <span><span class="dot" style="background:#22c55e"></span> Esperado (Atual)</span>
+          <span><span class="dot" style="background:#f59e0b"></span> Esperado (Alvo)</span>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div>
+            <div class="muted">Hard Skills</div>
+            <radar-chart id="radarHard"></radar-chart>
+          </div>
+          <div>
+            <div class="muted">Soft/Comportamentais</div>
+            <div id="softInfo" class="muted" style="display:none; margin:4px 0;">Poucas soft skills detectadas — o gráfico foi ajustado para visualização.</div>
+            <radar-chart id="radarSoft"></radar-chart>
+          </div>
+        </div>
+      </section>
+
+      <!-- Grid Hard -->
+      <section class="card section" aria-labelledby="sec-grid-hard" style="grid-column: 1 / -1;">
+        <h2 id="sec-grid-hard">4) Grid — Hard Skills (evidências + ajuste)</h2>
+        <skill-grid id="skillGridHard" data-mode="hard" aria-label="Grid Hard Skills" tabindex="0"></skill-grid>
+      </section>
+
+      <!-- Grid Soft -->
+      <section class="card section" aria-labelledby="sec-grid-soft" style="grid-column: 1 / -1;">
+        <h2 id="sec-grid-soft">5) Grid — Soft Skills (evidências + ajuste)</h2>
+        <skill-grid id="skillGridSoft" data-mode="soft" aria-label="Grid Soft Skills" tabindex="0"></skill-grid>
+      </section>
+
+      <!-- Timeline de experiência -->
+      <section class="card section" aria-labelledby="sec-timeline" style="grid-column: 1 / -1;">
+        <h2 id="sec-timeline">6) Timeline de Experiência</h2>
+        <p class="muted">Valide se os anos de experiência batem com a proficiência.</p>
+        <exp-timeline id="expTimeline"></exp-timeline>
+      </section>
+
+      <!-- Recomendações -->
+      <section class="card section" aria-labelledby="sec-recos" style="grid-column: 1 / -1;">
+        <h2 id="sec-recos">7) Recomendações de Trilhas</h2>
+        <p class="muted">Inclui “Why this?” e considera peso/impacto e cargo alvo.</p>
+        <reco-list id="recosList"></reco-list>
+      </section>
+
+      <!-- KPIs -->
+      <section class="section" style="grid-column: 1 / -1;">
+        <div class="kpi">
+          <div class="card">
+            <div class="muted">Precisão percebida (feedback)</div>
+            <div style="font-size:20px; font-weight:700">78%</div>
+            <div class="progress" aria-label="Progresso de precisão"><div style="width:78%"></div></div>
+          </div>
+          <div class="card">
+            <div class="muted">CVs processados</div>
+            <div style="font-size:20px; font-weight:700"><span id="kpiProcessed">0</span></div>
+            <div class="progress" aria-label="Progresso de CVs processados"><div id="kpiBar" style="width:0%"></div></div>
+          </div>
+          <div class="card">
+            <div class="muted">Tempo médio por CV</div>
+            <div style="font-size:20px; font-weight:700"><span id="kpiTime">—</span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <p class="footer">MVP 4 • Evidências/Confiança • Autoavaliação • Radar 3 camadas • Delta para cargo alvo • Timeline de experiência • Embeddings-ready.</p>
+  </div>
+
+  <!-- Modal de Evidências -->
+  <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <h3 id="modalTitle">Evidências da Skill</h3>
+      <div id="modalBody"></div>
+      <div class="actions" style="margin-top:12px; justify-content:flex-end;">
+        <button id="modalClose">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===========================
+       Estado & mocks
+    =========================== */
+    const state = {
+      processed: 0,
+      startTime: null,
+      theme: 'dark',
+      skills: [],         // extraído da IA (mock)
+      normalized: [],     // pós-normalização semântica
+      grid: [],           // join role atual
+      gridTarget: [],     // join role alvo
+      overrides: {},      // ajustes humanos (nível)
+      self: {},           // autoavaliação {skill: nivel}
+      recos: []
+    };
+
+    // Grid esperado por cargo (mock) — inclui "impacto" (1..3)
+    const skillGridByRole = {
+      "planner": [
+        { skill: "SQL", categoria: "Dados", nivel_esperado: 3, peso: 5, impacto: 3 },
+        { skill: "Excel Avançado", categoria: "Ferramentas", nivel_esperado: 4, peso: 5, impacto: 2 },
+        { skill: "Power BI", categoria: "BI", nivel_esperado: 3, peso: 4, impacto: 2 },
+        { skill: "Forecasting", categoria: "Estatística", nivel_esperado: 2, peso: 4, impacto: 2 },
+        { skill: "Python", categoria: "Dados", nivel_esperado: 2, peso: 3, impacto: 2 },
+        { skill: "Oracle Retail", categoria: "ERP/Retalho", nivel_esperado: 2, peso: 5, impacto: 3 },
+        { skill: "Comunicação", categoria: "Soft", nivel_esperado: 3, peso: 3, impacto: 2 }
+      ],
+      "planner-senior": [
+        { skill: "SQL", categoria: "Dados", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "Power BI", categoria: "BI", nivel_esperado: 4, peso: 4, impacto: 2 },
+        { skill: "Forecasting", categoria: "Estatística", nivel_esperado: 3, peso: 4, impacto: 2 },
+        { skill: "Python", categoria: "Dados", nivel_esperado: 3, peso: 3, impacto: 2 },
+        { skill: "Oracle Retail", categoria: "ERP/Retalho", nivel_esperado: 3, peso: 5, impacto: 3 },
+        { skill: "Comunicação", categoria: "Soft", nivel_esperado: 4, peso: 3, impacto: 2 }
+      ],
+      "data-analyst": [
+        { skill: "SQL", categoria: "Dados", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "Python", categoria: "Dados", nivel_esperado: 3, peso: 5, impacto: 3 },
+        { skill: "Power BI", categoria: "BI", nivel_esperado: 3, peso: 4, impacto: 2 },
+        { skill: "Estatística", categoria: "Estatística", nivel_esperado: 3, peso: 4, impacto: 2 },
+        { skill: "Excel Avançado", categoria: "Ferramentas", nivel_esperado: 3, peso: 3, impacto: 1 }
+      ],
+      "project-manager": [
+        { skill: "Gestão de Projetos", categoria: "Gestão", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "Comunicação", categoria: "Soft", nivel_esperado: 4, peso: 4, impacto: 3 },
+        { skill: "Agile/Scrum", categoria: "Métodos", nivel_esperado: 3, peso: 4, impacto: 2 },
+        { skill: "Riscos", categoria: "Gestão", nivel_esperado: 3, peso: 3, impacto: 2 }
+      ],
+      "backend-dev": [
+        { skill: "Java", categoria: "Backend", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "SQL", categoria: "Dados", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "APIs REST", categoria: "Backend", nivel_esperado: 3, peso: 4, impacto: 2 },
+        { skill: "Cloud", categoria: "Infra", nivel_esperado: 3, peso: 4, impacto: 2 }
+      ],
+      "data-manager": [
+        { skill: "SQL", categoria: "Dados", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "Python", categoria: "Dados", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "Power BI", categoria: "BI", nivel_esperado: 4, peso: 4, impacto: 2 },
+        { skill: "Estatística", categoria: "Estatística", nivel_esperado: 3, peso: 4, impacto: 2 },
+        { skill: "Gestão de Pessoas", categoria: "Soft", nivel_esperado: 4, peso: 4, impacto: 3 },
+        { skill: "Comunicação", categoria: "Soft", nivel_esperado: 4, peso: 4, impacto: 3 }
+      ],
+      "product-manager": [
+        { skill: "Gestão de Produto", categoria: "Gestão", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "Comunicação", categoria: "Soft", nivel_esperado: 4, peso: 4, impacto: 3 },
+        { skill: "Dados", categoria: "Dados", nivel_esperado: 3, peso: 3, impacto: 2 },
+        { skill: "Liderança", categoria: "Soft", nivel_esperado: 4, peso: 4, impacto: 3 }
+      ],
+      "engineering-manager": [
+        { skill: "Gestão de Pessoas", categoria: "Soft", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "Arquitetura de Software", categoria: "Backend", nivel_esperado: 3, peso: 4, impacto: 3 },
+        { skill: "Comunicação", categoria: "Soft", nivel_esperado: 4, peso: 4, impacto: 3 },
+        { skill: "Cloud", categoria: "Infra", nivel_esperado: 3, peso: 4, impacto: 2 }
+      ]
+    };
+
+    // Catálogo de trilhas (mock)
+    const learningCatalog = [
+      { id: "udemy-sql-bootcamp", nome: "The Complete SQL Bootcamp", fonte: "Udemy", duracao: "12–15h", skills: ["SQL"] },
+      { id: "linkedin-powerbi", nome: "Power BI: Dashboards para Negócios", fonte: "LinkedIn Learning", duracao: "8–10h", skills: ["Power BI"] },
+      { id: "coursera-forecasting", nome: "Business Forecasting", fonte: "Coursera", duracao: "10–12h", skills: ["Forecasting","Estatística"] },
+      { id: "oracle-retail-intro", nome: "Introdução ao Oracle Retail", fonte: "Trilha Interna", duracao: "6–8h", skills: ["Oracle Retail"] },
+      { id: "excel-advanced", nome: "Excel Avançado para Negócios", fonte: "Trilha Interna", duracao: "12–16h", skills: ["Excel Avançado"] },
+      { id: "python-data", nome: "Python para Análise de Dados", fonte: "Coursera", duracao: "15–20h", skills: ["Python"] }
+    ];
+
+    /* ===========================
+       Utilitários
+    =========================== */
+    const $ = (sel) => document.querySelector(sel);
+    function setStatus(text){ const el=$("#status"); if(el) el.textContent = text; }
+    function safeHTML(str){ return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])) }
+    function readTXT(file){ return new Promise((resolve,reject)=>{ const r=new FileReader(); r.onload=()=>resolve(r.result); r.onerror=reject; r.readAsText(file,'utf-8'); }); }
+    function formatTS(){ const d=new Date(), p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
+    function isSoftCategory(cat){ const softCats=["Soft","Comportamental","Liderança","Gestão","Comunicação","Gestão de Pessoas"]; return softCats.some(s => (cat||"").toLowerCase().includes(s.toLowerCase())); }
+
+    /* ===========================
+       Extract (mock) com evidências & confiança
+    =========================== */
+    function extractSnippets(text, term){
+      const lines = text.split(/\n|\r/).map(l=>l.trim()).filter(Boolean);
+      const lc = term.toLowerCase();
+      const hits = lines.filter(l => l.toLowerCase().includes(lc));
+      return hits.slice(0,3);
+    }
+    function mockExtractSkills(text){
+      const catalog = [
+        { skill_name:"SQL", categoria:"Dados"},
+        { skill_name:"Excel Avançado", categoria:"Ferramentas"},
+        { skill_name:"Power BI", categoria:"BI"},
+        { skill_name:"Forecasting", categoria:"Estatística"},
+        { skill_name:"Python", categoria:"Dados"},
+        { skill_name:"Oracle Retail", categoria:"ERP/Retalho"},
+        { skill_name:"Comunicação", categoria:"Soft"},
+        { skill_name:"Gestão de Pessoas", categoria:"Soft"},
+        { skill_name:"Gestão de Projetos", categoria:"Gestão"},
+        { skill_name:"Estatística", categoria:"Estatística"}
+      ];
+      const lower = text.toLowerCase();
+      let found = catalog
+        .filter(k => lower.includes(k.skill_name.toLowerCase().split(' ')[0]))
+        .map(k => {
+          const evidencias = extractSnippets(text, k.skill_name);
+          const base = evidencias.length ? 0.75 : 0.45;
+          const prof = Math.min(4, 1 + Math.floor(Math.random()*4));
+          const anos = Math.floor(Math.random()*7);
+          const conf = Math.min(1, base + (prof-1)*0.05 + (anos*0.02));
+          return {
+            ...k,
+            proficiencia_estimada: prof,
+            anos_experiencia: anos,
+            fonte_no_texto: evidencias.length ? "snippets" : "heurística",
+            evidencias,
+            confianca: Math.round(conf * 100)
+          };
+        });
+      if(found.length === 0){
+        found = [
+          { skill_name:"SQL", categoria:"Dados", proficiencia_estimada:2, anos_experiencia:1, fonte_no_texto:"fallback", evidencias:[], confianca:50 },
+          { skill_name:"Excel Avançado", categoria:"Ferramentas", proficiencia_estimada:3, anos_experiencia:2, fonte_no_texto:"fallback", evidencias:[], confianca:55 },
+          { skill_name:"Power BI", categoria:"BI", proficiencia_estimada:2, anos_experiencia:1, fonte_no_texto:"fallback", evidencias:[], confianca:48 }
+        ];
+      }
+      return found;
+    }
+
+    /* ===========================
+       Normalização — Embeddings-ready
+    =========================== */
+    async function semanticMatch(query, candidates){
+      try{
+        // Backend opcional:
+        // const res = await fetch('/api/semantic-match',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({query, candidates})});
+        // if(res.ok){ return await res.json(); }
+        throw new Error('no-backend');
+      }catch{
+        // Fallback local: token overlap simples
+        const tok = s=> (s||"").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(/[^a-z0-9+.]+/).filter(Boolean);
+        const q = new Set(tok(query));
+        let best=null,bestScore=-1;
+        for(const c of candidates){
+          const t = new Set(tok(c));
+          const inter = [...q].filter(x => t.has(x)).length;
+          const score = inter / Math.max(1, new Set([...q,...t]).size);
+          if(score > bestScore){ bestScore=score; best=c; }
+        }
+        return { best, score: bestScore };
+      }
+    }
+    async function normalizeSkills(skills, role){
+      const expected = (skillGridByRole[role] || []).map(e => e.skill);
+      const normalized = [];
+      for(const s of skills){
+        const { best } = await semanticMatch(s.skill_name, expected);
+        normalized.push({...s, skill_name: best || s.skill_name});
+      }
+      return normalized;
+    }
+
+    /* ===========================
+       Mapeamento Grid (inclui Delta para cargo alvo)
+    =========================== */
+    function buildGrid(normalized, role, overrides = {}, self = {}){
+      const expected = skillGridByRole[role] || [];
+      return expected.map(exp => {
+        const match = normalized.find(s => s.skill_name.toLowerCase() === exp.skill.toLowerCase());
+        const nivel_ia = match ? Number(match.proficiencia_estimada) : 0;
+        const nivel_self = (self[exp.skill] != null) ? Number(self[exp.skill]) : null;
+        const nivel_atual = overrides[exp.skill] ?? (nivel_self ?? nivel_ia);
+        const confianca = match?.confianca ?? null;
+        const evidencias = match?.evidencias ?? [];
+        const gap = exp.nivel_esperado - nivel_atual;
+        const severidade = Math.max(0, gap) * (exp.peso || 1) * (exp.impacto || 1);
+        const conflito = (nivel_self != null && Math.abs(nivel_self - nivel_ia) >= 2);
+        return {
+          skill: exp.skill, categoria: exp.categoria,
+          nivel_esperado: exp.nivel_esperado, nivel_atual, gap,
+          peso: exp.peso, impacto: exp.impacto, severidade,
+          nivel_detectado: nivel_ia, nivel_self, confianca, evidencias, fonte: match?.fonte_no_texto ?? null,
+          nivel_esperado_target: null, delta_promocao: null, impacto_target: null, peso_target: null, severidade_target: null,
+          conflito
+        };
+      });
+    }
+    function buildGridTarget(currentGrid, targetRole){
+      const targetExp = skillGridByRole[targetRole] || [];
+      const mapTarget = Object.fromEntries(targetExp.map(e => [e.skill, e]));
+      return currentGrid.map(r => {
+        const t = mapTarget[r.skill];
+        const nivel_esperado_target = t ? t.nivel_esperado : r.nivel_esperado;
+        const delta_promocao = nivel_esperado_target - r.nivel_atual;
+        const impacto_t = t ? t.impacto : r.impacto;
+        const peso_t = t ? t.peso : r.peso;
+        const severidade_target = Math.max(0, delta_promocao) * (peso_t||1) * (impacto_t||1);
+        return { ...r, nivel_esperado_target, delta_promocao, impacto_target: impacto_t, peso_target: peso_t, severidade_target };
+      });
+    }
+
+    /* ===========================
+       Recomendações com "Why this?" (considera cargo alvo)
+    =========================== */
+    function recommendByGaps(gridWithTarget, role, targetRole){
+      const lacking = gridWithTarget
+        .map(r => ({...r, score: (Math.max(0,r.gap) * r.peso * r.impacto) + (Math.max(0,r.delta_promocao) * r.peso_target * r.impacto_target)}))
+        .filter(r => r.score > 0)
+        .sort((a,b) => b.score - a.score);
+      const topSkills = lacking.slice(0,5).map(r => r.skill);
+      const recos = [];
+      for(const s of topSkills){
+        const matches = learningCatalog.filter(c => c.skills.includes(s));
+        if(matches.length){
+          const g = lacking.find(l => l.skill === s);
+          recos.push(...matches.map(m => ({
+            ...m,
+            priority: Math.min(5, 1 + Math.ceil((g.score)/5)),
+            covers: s,
+            why: `Seu nível atual (${g.nivel_atual}) < esperado atual (${g.nivel_esperado}) e alvo (${g.nivel_esperado_target}). Peso ${g.peso}/${g.peso_target} e impacto ${g.impacto}/${g.impacto_target} tornam esta competência prioritária para ${targetRole || role}.`
+          })));
+        }
+      }
+      const uniq = [], seen = new Set();
+      for(const r of recos){ if(!seen.has(r.id)){ seen.add(r.id); uniq.push(r); } }
+      return uniq.slice(0,6);
+    }
+
+    /* ===========================
+       Web Components
+    =========================== */
+    // Radar Chart (3 camadas)
+    const radarTpl = document.createElement('template');
+    radarTpl.innerHTML = `
+      <style>
+        :host{display:block}
+        canvas{width:100%; height:360px; max-height:42vh}
+      </style>
+      <canvas></canvas>
+    `;
+    class RadarChart extends HTMLElement{
+      constructor(){
+        super();
+        this.attachShadow({mode:'open'}).appendChild(radarTpl.content.cloneNode(true));
+        this.canvas = this.shadowRoot.querySelector('canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this._data = { labels: [], current: [], expected: [], expectedTarget: [], max: 5 };
+        this.resizeObserver = new ResizeObserver(()=> this.draw());
+      }
+      connectedCallback(){ this.resizeObserver.observe(this); this.draw(); }
+      disconnectedCallback(){ this.resizeObserver.disconnect(); }
+      set data(d){ this._data = d || this._data; this.draw(); }
+      get data(){ return this._data; }
+      draw(){
+        const { labels, current, expected, expectedTarget, max } = this._data;
+        const n = labels.length || 1;
+        const dpi = window.devicePixelRatio || 1;
+        const w = this.clientWidth || 400;
+        const h = this.clientHeight || 360;
+        this.canvas.width = w * dpi; this.canvas.height = h * dpi;
+        this.canvas.style.width = w + 'px'; this.canvas.style.height = h + 'px';
+        const ctx = this.ctx; ctx.setTransform(dpi,0,0,dpi,0,0);
+        ctx.clearRect(0,0,w,h);
+        const cx = w/2, cy = h/2 + 10;
+        const radius = Math.min(w,h) * 0.36;
+
+        // grid
+        const levels = 5;
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || 'rgba(180,180,180,.3)';
+        for(let l=1; l<=levels; l++){
+          const r = radius * (l/levels);
+          ctx.beginPath();
+          for(let i=0;i<n;i++){
+            const ang = (Math.PI*2 * i / n) - Math.PI/2;
+            const x = cx + r * Math.cos(ang);
+            const y = cy + r * Math.sin(ang);
+            if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+          }
+          ctx.closePath(); ctx.stroke();
+        }
+        // axes + labels
+        ctx.font = "12px system-ui, sans-serif";
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#888';
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        labels.forEach((lab,i)=>{
+          const ang = (Math.PI*2 * i / n) - Math.PI/2;
+          const x = cx + (radius+16) * Math.cos(ang);
+          const y = cy + (radius+16) * Math.sin(ang);
+          ctx.fillText(lab, x, y);
+          ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + radius * Math.cos(ang), cy + radius * Math.sin(ang)); ctx.stroke();
+        });
+
+        function polygon(vals, color, alpha){
+          if(vals.length !== n) return;
+          ctx.beginPath();
+          for(let i=0;i<n;i++){
+            const v = Math.max(0, Math.min(max, vals[i]));
+            const r = radius * (v/max);
+            const ang = (Math.PI*2 * i / n) - Math.PI/2;
+            const x = cx + r * Math.cos(ang);
+            const y = cy + r * Math.sin(ang);
+            if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+          }
+          ctx.closePath();
+          ctx.fillStyle = color; ctx.globalAlpha = alpha; ctx.fill();
+          ctx.globalAlpha = 1; ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+        }
+        polygon(expected, '#22c55e', 0.12);
+        polygon(expectedTarget, '#f59e0b', 0.12);
+        polygon(current, '#38bdf8', 0.18);
+      }
+    }
+    customElements.define('radar-chart', RadarChart);
+
+    // Skill Grid com "Ajustar" e "Evidências"
+    const tableTemplate = document.createElement('template');
+    tableTemplate.innerHTML = `
+      <style>
+        :host{display:block; overflow:auto; border-radius:10px; border:1px solid var(--border-soft)}
+        table{width:100%; border-collapse:collapse; font-size:14px; background:transparent}
+        th, td{border-bottom:1px solid var(--border-soft); padding:10px 8px; text-align:left; color:var(--text)}
+        .muted{color:var(--muted)}
+        .badge{padding:2px 8px; border-radius:999px; font-size:12px; font-weight:700}
+        .gap-ok{background: color-mix(in oklab, var(--accent) 15%, transparent); color:var(--success)}
+        .gap-mid{background: color-mix(in oklab, var(--warn) 15%, transparent); color:var(--warning)}
+        .gap-high{background: color-mix(in oklab, var(--danger) 15%, transparent); color:var(--error)}
+        .inline-edit{display:flex; gap:8px; align-items:center}
+        .inline-edit input[type="range"]{flex:1}
+        .btn{cursor:pointer; padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text)}
+        .btn:hover{filter:brightness(1.06)}
+        .warn{color:var(--warning); font-weight:700}
+        .conflict{color:var(--error); font-weight:700}
+      </style>
+      <table part="table">
+        <thead>
+          <tr>
+            <th scope="col">Skill</th>
+            <th scope="col">Categoria</th>
+            <th scope="col" title="Esperado p/ cargo atual">Exp. (Atual)</th>
+            <th scope="col" title="Esperado p/ cargo alvo">Exp. (Alvo)</th>
+            <th scope="col">Atual</th>
+            <th scope="col">Gap</th>
+            <th scope="col">Δ Promo</th>
+            <th scope="col">Conf.</th>
+            <th scope="col">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="body"></tbody>
+      </table>
+    `;
+    class SkillGrid extends HTMLElement{
+      constructor(){
+        super();
+        this._rows = [];
+        this.attachShadow({mode:'open'}).appendChild(tableTemplate.content.cloneNode(true));
+        this.$body = this.shadowRoot.getElementById('body');
+      }
+      set data(rows){
+        this._rows = Array.isArray(rows) ? rows : [];
+        this.render();
+      }
+      get data(){ return this._rows; }
+      render(){
+        this.$body.innerHTML = '';
+        for(const r of this._rows){
+          const tr = document.createElement('tr');
+          const badgeClass = r.gap <= 0 ? "gap-ok" : (r.gap === 1 ? "gap-mid" : "gap-high");
+          const badgeText = r.gap <= 0 ? "OK" : (r.gap === 1 ? "Moderado" : "Crítico");
+          const warnLowConf = (r.confianca != null && r.confianca < 60);
+          const pulse = (r.gap >= 2 && (r.impacto||1) >= 3) ? 'pulse-core' : '';
+          tr.className = pulse;
+          tr.innerHTML = `
+            <td>${safeHTML(r.skill)} ${r.conflito ? '<span class="conflict" title="Conflito IA x Autoavaliação">⚠</span>' : ''}</td>
+            <td class="muted">${safeHTML(r.categoria)}</td>
+            <td>${r.nivel_esperado}</td>
+            <td>${r.nivel_esperado_target ?? '-'}</td>
+            <td>
+              <div class="inline-edit">
+                <span class="nivel-atual">${r.nivel_atual}</span>
+                <input type="range" min="0" max="5" step="1" value="${r.nivel_atual}" aria-label="Ajustar nível para ${safeHTML(r.skill)}" />
+              </div>
+            </td>
+            <td><span class="badge ${badgeClass}" title="Gap = esperado (atual) - atual">${r.gap} • ${badgeText}</span></td>
+            <td>${r.delta_promocao != null ? r.delta_promocao : '-'}</td>
+            <td>${r.confianca != null ? (warnLowConf ? '<span class="warn" title="Baixa confiança, revise manualmente">'+r.confianca+'%</span>' : (r.confianca+'%')) : '-'}</td>
+            <td>
+              <button class="btn btn-evidence">Evidências</button>
+              <button class="btn btn-adjust">Ajustar</button>
+            </td>
+          `;
+          tr.querySelector('.btn-adjust').addEventListener('click', () => {
+            const slider = tr.querySelector('input[type="range"]');
+            const newVal = Number(slider.value);
+            this.dispatchEvent(new CustomEvent('level-adjusted', { bubbles:true, detail:{ skill: r.skill, newLevel: newVal }}));
+          });
+          tr.querySelector('input[type="range"]').addEventListener('input', (e) => {
+            tr.querySelector('.nivel-atual').textContent = e.target.value;
+          });
+          tr.querySelector('.btn-evidence').addEventListener('click', () => {
+            this.dispatchEvent(new CustomEvent('show-evidence', { bubbles:true, detail:{ row: r }}));
+          });
+          this.$body.appendChild(tr);
+        }
+      }
+    }
+    customElements.define('skill-grid', SkillGrid);
+
+    // Recomendações (com Why this?)
+    const recoTemplate = document.createElement('template');
+    recoTemplate.innerHTML = `
+      <style>
+        :host{display:flex; flex-direction:column; gap:10px}
+        .card{
+          background: linear-gradient(180deg, color-mix(in oklab, var(--card) 92%, transparent), color-mix(in oklab, var(--card-2) 92%, transparent));
+          border:1px solid var(--border-soft); border-radius:14px; padding:12px;
+        }
+        .muted{color:var(--muted)}
+        .pill{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; border:1px solid var(--border); color:var(--muted); font-size:12px; background:var(--surface);}
+        .why{margin-top:6px; font-size:13px; color:var(--muted)}
+      </style>
+      <div id="wrap"></div>
+    `;
+    class RecoList extends HTMLElement{
+      constructor(){
+        super();
+        this._items = [];
+        this.attachShadow({mode:'open'}).appendChild(recoTemplate.content.cloneNode(true));
+        this.$wrap = this.shadowRoot.getElementById('wrap');
+      }
+      set items(v){ this._items = Array.isArray(v) ? v : []; this.render(); }
+      get items(){ return this._items; }
+      render(){
+        this.$wrap.innerHTML = '';
+        if(this._items.length === 0){
+          const div = document.createElement('div');
+          div.className = 'muted';
+          div.textContent = 'Sem gaps relevantes. Bom trabalho! 🎉';
+          this.$wrap.appendChild(div);
+          return;
+        }
+        for(const r of this._items){
+          const div = document.createElement('div');
+          div.className = 'card';
+          div.innerHTML = `
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+              <div>
+                <div style="font-weight:700">${safeHTML(r.nome)}</div>
+                <div class="muted">${safeHTML(r.fonte)} • ${safeHTML(r.duracao)} • cobre: <strong>${safeHTML(r.covers)}</strong></div>
+              </div>
+              <div class="pill" aria-label="Prioridade da trilha">P${r.priority}</div>
+            </div>
+            <div class="why">💡 ${safeHTML(r.why || '')}</div>
+          `;
+          this.$wrap.appendChild(div);
+        }
+      }
+    }
+    customElements.define('reco-list', RecoList);
+
+    // Timeline experiência
+    const expTpl = document.createElement('template');
+    expTpl.innerHTML = `
+      <style>
+        :host{display:block}
+        .row{display:grid; grid-template-columns: 180px 1fr 60px; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid var(--border-soft)}
+        .label{color:var(--muted)}
+        .barwrap{height:10px; background:var(--surface); border:1px solid var(--border-soft); border-radius:999px; overflow:hidden}
+        .bar{height:100%; background: linear-gradient(90deg, var(--accent-2), var(--accent)); width:0%}
+        .yrs{text-align:right; color:var(--muted)}
+      </style>
+      <div id="wrap"></div>
+    `;
+    class ExpTimeline extends HTMLElement{
+      constructor(){
+        super();
+        this._items = [];
+        this.attachShadow({mode:'open'}).appendChild(expTpl.content.cloneNode(true));
+        this.$wrap = this.shadowRoot.getElementById('wrap');
+      }
+      set items(v){ this._items = Array.isArray(v) ? v : []; this.render(); }
+      render(){
+        this.$wrap.innerHTML = '';
+        const max = Math.max(1, ...this._items.map(i => i.anos_experiencia || 0), 5);
+        for(const it of this._items){
+          const row = document.createElement('div');
+          const pct = Math.min(100, Math.round(((it.anos_experiencia || 0)/max)*100));
+          row.className = 'row';
+          row.innerHTML = `
+            <div class="label">${safeHTML(it.skill_name || it.skill)}</div>
+            <div class="barwrap"><div class="bar" style="width:${pct}%"></div></div>
+            <div class="yrs">${it.anos_experiencia || 0} ano(s)</div>
+          `;
+          this.$wrap.appendChild(row);
+        }
+      }
+    }
+    customElements.define('exp-timeline', ExpTimeline);
+
+    /* ===========================
+       Persistência (LocalStorage)
+    =========================== */
+    const STORAGE_KEYS = { ROLE:'wip:lastRole', TARGET:'wip:targetRole', THEME:'wip:theme', OVERRIDES:'wip:overrides', SELF:'wip:self' };
+    const save = (k,v)=>{ try{ localStorage.setItem(k, typeof v==='string'?v:JSON.stringify(v)); }catch{} };
+    const load = (k,def=null)=>{ try{ const v=localStorage.getItem(k); if(!v) return def; try{ return JSON.parse(v); }catch{ return v; } }catch{ return def; } };
+
+    /* ===========================
+       Render helpers
+    =========================== */
+    function renderSkills(skills){ const el=$("#skillsJson"); if(el) el.textContent = JSON.stringify(skills, null, 2); }
+    function splitHardSoftRows(rows){ return { hard: rows.filter(r => !isSoftCategory(r.categoria)), soft: rows.filter(r => isSoftCategory(r.categoria)) }; }
+    function renderGrids(rows){
+      const {hard, soft} = splitHardSoftRows(rows);
+      const hardEl = $("#skillGridHard"); if(hardEl) hardEl.data = hard;
+      const softEl = $("#skillGridSoft"); if(softEl) softEl.data = soft;
+    }
+
+    // Radar com padding para Soft
+    function renderRadars(rows, rowsTarget){
+      const {hard, soft} = splitHardSoftRows(rows);
+      const tgtMap = Object.fromEntries(rowsTarget.map(r => [r.skill, r]));
+
+      const toRadarRaw = (arr) => ({
+        labels: arr.map(r => r.skill),
+        current: arr.map(r => r.nivel_atual),
+        expected: arr.map(r => r.nivel_esperado),
+        expectedTarget: arr.map(r => (tgtMap[r.skill]?.nivel_esperado_target ?? r.nivel_esperado)),
+        max: 5
+      });
+
+      const padRadar = (data) => {
+        const out = {...data};
+        while (out.labels.length < 3) {
+          out.labels.push('•');
+          out.current.push(0);
+          out.expected.push(0);
+          out.expectedTarget.push(0);
+        }
+        return out;
+      };
+
+      const hardData = padRadar(toRadarRaw(hard));
+      const softBase = soft.length ? soft : [{skill:'Comunicação', nivel_atual:0, nivel_esperado:3}];
+      const softData = padRadar(toRadarRaw(softBase));
+      const softHasPad = soft.length < 3;
+
+      const rh = $("#radarHard"); if(rh) rh.data = hardData;
+      const rs = $("#radarSoft"); if(rs) rs.data = softData;
+      const softInfo = $("#softInfo"); if(softInfo) softInfo.style.display = softHasPad ? 'block' : 'none';
+    }
+
+    function renderRecos(recos){ const el=$("#recosList"); if(el) el.items = recos; }
+    function renderTimeline(skills){ const el=$("#expTimeline"); if(el) el.items = skills; }
+    function renderKPIs(){
+      const kpip=$("#kpiProcessed"), kpib=$("#kpiBar"), kpit=$("#kpiTime");
+      if(kpip) kpip.textContent = String(state.processed);
+      if(kpib) kpib.style.width = Math.min(100, state.processed * 20) + "%";
+      if(kpit && state.startTime){
+        const sec = Math.max(1, Math.round((performance.now() - state.startTime)/1000));
+        kpit.textContent = `${sec}s`;
+      }
+    }
+    function showSelfAssessment(role){
+      const exp = skillGridByRole[role] || [];
+      const wrap = $("#selfForm"); if(!wrap) return;
+      wrap.innerHTML = '';
+      for(const e of exp){
+        const row = document.createElement('div');
+        row.style.display='grid'; row.style.gridTemplateColumns='1fr auto'; row.style.gap='8px'; row.style.alignItems='center';
+        row.innerHTML = `
+          <div><strong>${safeHTML(e.skill)}</strong> <span class="muted">(${safeHTML(e.categoria)})</span></div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="range" min="0" max="5" step="1" value="${state.self[e.skill] ?? 0}" data-skill="${safeHTML(e.skill)}" />
+            <span class="muted" data-out="${safeHTML(e.skill)}">${state.self[e.skill] ?? 0}</span>
+          </div>
+        `;
+        wrap.appendChild(row);
+      }
+      wrap.querySelectorAll('input[type="range"]').forEach(sl => {
+        sl.addEventListener('input', (e)=> {
+          const s = e.target.getAttribute('data-skill');
+          const v = Number(e.target.value);
+          state.self[s] = v; save(STORAGE_KEYS.SELF, state.self);
+          const out = wrap.querySelector(`[data-out="${CSS.escape(s)}"]`);
+          if(out) out.textContent = v;
+        });
+      });
+      const selfWrap = $("#selfWrap"); if(selfWrap) selfWrap.style.display = 'block';
+    }
+
+    /* ===========================
+       Drag & Drop + Input file
+    =========================== */
+    const dropZone = $("#dropZone"), fileInput = $("#cvFile");
+    function highlightDrop(e, on){ e.preventDefault(); e.stopPropagation(); dropZone?.classList.toggle('is-dragover', on); }
+    ['dragenter','dragover'].forEach(ev => dropZone?.addEventListener(ev, (e)=>highlightDrop(e, true)));
+    ['dragleave','dragend','drop'].forEach(ev => dropZone?.addEventListener(ev, (e)=>highlightDrop(e, false)));
+    dropZone?.addEventListener('drop', async (e) => { e.preventDefault(); const file = e.dataTransfer?.files?.[0]; if(file) await handleFile(file); });
+    dropZone?.addEventListener('click', () => fileInput?.click());
+    dropZone?.addEventListener('keydown', (e) => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); fileInput?.click(); } });
+    fileInput?.addEventListener("change", async (e) => { const file = e.target.files?.[0]; if(!file) return; await handleFile(file); });
+
+    async function handleFile(file){
+      setStatus("Lendo arquivo..."); state.startTime = performance.now();
+      const ext = (file.name.split(".").pop() || "").toLowerCase();
+      try{
+        if(ext === "txt"){ const t=await readTXT(file); const el=$("#cvText"); if(el) el.value = t; }
+        else {
+          const el=$("#cvText"); if(el) el.value =
+`[SIMULAÇÃO - substitua por texto extraído]
+Nome: Marco Lucas
+Cargo: Planner
+Experiências: Oracle Retail, RDF, IAF, TOTVS, Power BI, SQL, Excel avançado, Forecasting, Python
+Projetos: 2 anos automatizando relatórios de BI com Python (Pandas); criação de dashboards no Power BI; consultas SQL avançadas
+`;
+        }
+        setStatus(`Arquivo carregado: ${file.name}`); dropZone?.focus();
+      }catch(err){ console.error(err); setStatus("Erro ao ler arquivo"); alert("Não foi possível ler o arquivo. Para PDF/DOCX, este MVP usa simulação local."); }
+    }
+
+    /* ===========================
+       Modal evidências
+    =========================== */
+    const modal = $("#modalBackdrop"), modalBody = $("#modalBody");
+    $("#modalClose")?.addEventListener('click', ()=> { if(modal) modal.style.display='none'; });
+    function openEvidenceModal(row){
+      if(!modalBody || !modal) return;
+      modalBody.innerHTML = `
+        <div class="chips">
+          <span class="chip"><strong>Skill:</strong> ${safeHTML(row.skill)}</span>
+          <span class="chip"><strong>Nível IA:</strong> ${row.nivel_detectado}</span>
+          <span class="chip"><strong>Nível Atual:</strong> ${row.nivel_atual}</span>
+          <span class="chip"><strong>Confiança:</strong> ${row.confianca != null ? row.confianca+'%' : '—'}</span>
+          ${row.conflito ? '<span class="chip" style="border-color:var(--error); color:var(--error)"><strong>Conflito IA × Auto</strong></span>' : ''}
+        </div>
+        <div style="margin-top:8px">
+          <div class="muted">Evidências extraídas do CV:</div>
+          ${(row.evidencias && row.evidencias.length) ? row.evidencias.map(ev => `<div class="evidence">“${safeHTML(ev)}”</div>`).join('') : '<div class="evidence">Nenhum trecho forte encontrado — confiança menor. Revise manualmente.</div>'}
+        </div>
+      `;
+      modal.style.display = 'flex';
+    }
+
+    /* ===========================
+       Handlers principais
+    =========================== */
+    $("#btnExtract")?.addEventListener("click", async () => {
+      const text = $("#cvText")?.value.trim();
+      if(!text){ alert("Carregue um arquivo ou cole o texto do CV."); return; }
+      setStatus("Extraindo skills (mock) com evidências & confiança...");
+      const extracted = mockExtractSkills(text);
+      state.skills = extracted;
+      renderSkills(extracted);
+      renderTimeline(extracted);
+      state.processed += 1; renderKPIs();
+      setStatus("Skills extraídas.");
+    });
+
+    // Toggle do JSON
+    const btnToggleJson = $("#btnToggleJson");
+    btnToggleJson?.addEventListener('click', () => {
+      const pre = $("#skillsJson"); if(!pre) return;
+      const isHidden = pre.style.display === 'none';
+      pre.style.display = isHidden ? 'block' : 'none';
+      btnToggleJson.textContent = isHidden ? 'Recolher JSON' : 'Mostrar JSON';
+      btnToggleJson.setAttribute('aria-expanded', String(isHidden));
+    });
+
+    $("#btnSelf")?.addEventListener("click", ()=> {
+      const role = $("#roleSelect")?.value || 'planner';
+      showSelfAssessment(role);
+      setStatus("Autoavaliação habilitada.");
+    });
+
+    $("#btnNormalize")?.addEventListener("click", async () => {
+      if(state.skills.length === 0){ alert("Extraia as skills primeiro."); return; }
+      setStatus("Normalizando (semântica) e mapeando...");
+      const role = $("#roleSelect")?.value || 'planner';
+      const targetRole = $("#targetRoleSelect")?.value || 'planner-senior';
+      state.normalized = await normalizeSkills(state.skills, role);
+      state.overrides = load(STORAGE_KEYS.OVERRIDES, {}) || {};
+      state.self = load(STORAGE_KEYS.SELF, {}) || state.self;
+      let grid = buildGrid(state.normalized, role, state.overrides, state.self);
+      grid = buildGridTarget(grid, targetRole);
+      state.grid = grid;
+      const recalcTarget = grid.map(g => ({...g}));
+      state.gridTarget = recalcTarget;
+      renderGrids(grid);
+      renderRadars(grid, recalcTarget);
+      state.recos = recommendByGaps(grid, role, targetRole);
+      renderRecos(state.recos);
+      setStatus("Grid, radar e recomendações gerados.");
+    });
+
+    $("#btnClear")?.addEventListener("click", () => {
+      const cv=$("#cvText"); if(cv) cv.value = "";
+      const pre=$("#skillsJson"); if(pre) pre.textContent = "{}";
+      const g1=$("#skillGridHard"); if(g1) g1.data = [];
+      const g2=$("#skillGridSoft"); if(g2) g2.data = [];
+      const rl=$("#recosList"); if(rl) rl.items = [];
+      const rh=$("#radarHard"); if(rh) rh.data = {labels:[], current:[], expected:[], expectedTarget:[], max:5};
+      const rs=$("#radarSoft"); if(rs) rs.data = {labels:[], current:[], expected:[], expectedTarget:[], max:5};
+      const tl=$("#expTimeline"); if(tl) tl.items = [];
+      const sw=$("#selfWrap"); if(sw) sw.style.display = 'none';
+      setStatus("Aguardando upload");
+      state.skills = []; state.normalized = []; state.grid = []; state.recos = [];
+      state.overrides = {}; state.self = {};
+      save(STORAGE_KEYS.OVERRIDES, state.overrides);
+      save(STORAGE_KEYS.SELF, state.self);
+      state.startTime = null; renderKPIs(); const kpit=$("#kpiTime"); if(kpit) kpit.textContent = "—";
+      dropZone?.focus();
+      const softInfo = $("#softInfo"); if (softInfo) softInfo.style.display = 'none';
+    });
+
+    // Exporta tudo
+    $("#btnExport")?.addEventListener("click", () => {
+      const payload = {
+        meta: {
+          exported_at: new Date().toISOString(),
+          role: $("#roleSelect")?.value,
+          target_role: $("#targetRoleSelect")?.value,
+          theme: document.documentElement.getAttribute('data-theme') || 'dark',
+          version: 'mvp4-fe-1.3.2'
+        },
+        overrides: state.overrides,
+        self_assessment: state.self,
+        skills_extracted: state.skills,
+        skills_normalized: state.normalized,
+        grid: state.grid,
+        recommendations: state.recos
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `skills-grid-${formatTS()}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setStatus("Exportação concluída.");
+    });
+
+    // Eventos dos grids (ajuste e evidências)
+    function onAdjust(e){
+      const { skill, newLevel } = e.detail || {};
+      if(!skill) return;
+      state.overrides[skill] = Number(newLevel);
+      save(STORAGE_KEYS.OVERRIDES, state.overrides); // <- CORRIGIDO
+
+      const role = $("#roleSelect")?.value || 'planner';
+      const targetRole = $("#targetRoleSelect")?.value || 'planner-senior';
+      let grid = buildGrid(state.normalized, role, state.overrides, state.self);
+      grid = buildGridTarget(grid, targetRole);
+      state.grid = grid;
+      renderGrids(grid);
+      renderRadars(grid, grid);
+      state.recos = recommendByGaps(grid, role, targetRole);
+      renderRecos(state.recos);
+      setStatus(`Nível de "${skill}" ajustado para ${newLevel}.`);
+    }
+    function onEvidence(e){
+      const { row } = e.detail || {}; if(!row) return;
+      openEvidenceModal(row);
+    }
+    $("#skillGridHard")?.addEventListener('level-adjusted', onAdjust);
+    $("#skillGridSoft")?.addEventListener('level-adjusted', onAdjust);
+    $("#skillGridHard")?.addEventListener('show-evidence', onEvidence);
+    $("#skillGridSoft")?.addEventListener('show-evidence', onEvidence);
+
+    // Persistência de cargo atual e alvo
+    const roleSelect = $("#roleSelect"), targetSelect = $("#targetRoleSelect");
+    const savedRole = load(STORAGE_KEYS.ROLE), savedTarget = load(STORAGE_KEYS.TARGET);
+    if(savedRole && [...roleSelect.options].some(o => o.value === savedRole)) roleSelect.value = savedRole;
+    if(savedTarget && [...targetSelect.options].some(o => o.value === savedTarget)) targetSelect.value = savedTarget;
+    roleSelect?.addEventListener('change', async (e)=>{ save(STORAGE_KEYS.ROLE, e.target.value); if(state.normalized.length){ $("#btnNormalize")?.click(); } });
+    targetSelect?.addEventListener('change', async (e)=>{ save(STORAGE_KEYS.TARGET, e.target.value); if(state.normalized.length){ $("#btnNormalize")?.click(); } });
+
+    // Tema (toggle + persistência)
+    const themeToggle = $("#themeToggle");
+    function applyTheme(theme){
+      document.documentElement.setAttribute('data-theme', theme); state.theme = theme;
+      themeToggle?.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+      if(themeToggle) themeToggle.textContent = theme === 'dark' ? '🌙 Modo escuro' : '☀️ Modo claro';
+      save(STORAGE_KEYS.THEME, theme);
+      if(state.grid.length){ renderRadars(state.grid, state.gridTarget || state.grid); }
+    }
+    applyTheme(load(STORAGE_KEYS.THEME) || 'dark');
+    themeToggle?.addEventListener('click', () => { const next = state.theme === 'dark' ? 'light' : 'dark'; applyTheme(next); setStatus(`Tema alterado para ${next==='dark'?'escuro':'claro'}.`); });
+
+    // KPIs iniciais
+    function renderKPIs(){ const kpip=$("#kpiProcessed"), kpib=$("#kpiBar"), kpit=$("#kpiTime"); if(kpip) kpip.textContent = String(state.processed); if(kpib) kpib.style.width = Math.min(100, state.processed * 20) + "%"; if(kpit && state.startTime){ const sec = Math.max(1, Math.round((performance.now() - state.startTime)/1000)); kpit.textContent = `${sec}s`; } }
+    renderKPIs();
+  </script>
+</body>
+</html>
