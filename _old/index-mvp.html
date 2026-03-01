@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MVP 4 — Workforce Intelligence (Opportunity Mapping)</title>
+  <meta name="description" content="MVP: leitura de CV, evidências, oportunidade positiva, radar com benchmark de mercado, autoavaliação, timeline, PDI." />
+  <style>
+    :root{
+      --bg:#0f172a; --card:#111827; --card-2:#0b1221;
+      --muted:#94a3b8; --text:#e5e7eb;
+      --accent:#22c55e; --accent-2:#38bdf8; --accent-3:#f59e0b; --accent-4:#8b5cf6;
+      --danger:#ef4444; --warn:#f59e0b;
+      --border: rgba(148,163,184,.25); --border-soft: rgba(148,163,184,.15);
+      --shadow: rgba(0,0,0,.35); --btn-bg: linear-gradient(135deg, rgba(34,197,94,.15), rgba(56,189,248,.15));
+      --btn-border: rgba(56,189,248,.25); --surface:#0a1222;
+      --success:#34d399; --warning:#fbbf24; --error:#f87171;
+      --glass-bg: rgba(255,255,255,0.06); --glass-border: rgba(255,255,255,0.18); --glass-blur: 12px;
+      --pulse-color: rgba(239,68,68,.45);
+      --skeleton: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.15) 37%, rgba(255,255,255,0.05) 63%);
+    }
+    html[data-theme="light"]{
+      --bg:#f8fafc; --card:#ffffff; --card-2:#f1f5f9;
+      --muted:#475569; --text:#0f172a;
+      --accent:#16a34a; --accent-2:#0284c7; --accent-3:#d97706; --accent-4:#7c3aed;
+      --danger:#dc2626; --warn:#d97706;
+      --border: rgba(15,23,42,.15); --border-soft: rgba(15,23,42,.10);
+      --shadow: rgba(0,0,0,.1); --btn-bg: linear-gradient(135deg, rgba(22,163,74,.12), rgba(2,132,199,.12));
+      --btn-border: rgba(2,132,199,.25); --surface:#eef2f7;
+      --success:#15803d; --warning:#b45309; --error:#b91c1c;
+      --glass-bg: rgba(255,255,255,0.55); --glass-border: rgba(15,23,42,0.15); --glass-blur: 10px;
+      --pulse-color: rgba(220,38,38,.35);
+    }
+
+    html,body{height:100%}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background:
+        radial-gradient(1200px 600px at 80% -10%, color-mix(in oklab, var(--accent-2) 25%, transparent), transparent 60%) ,
+        radial-gradient(1200px 700px at -10% 20%, color-mix(in oklab, var(--accent) 18%, transparent), transparent 60%),
+        var(--bg);
+      color:var(--text);
+    }
+    .container{max-width:1400px; margin:0 auto; padding:24px}
+    header{display:flex; gap:16px; align-items:center; justify-content:space-between; margin-bottom:16px}
+    .brand{display:flex; gap:12px; align-items:center}
+    .brand-logo{
+      width:40px;height:40px;border-radius:10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 10px 30px color-mix(in oklab, var(--accent-2) 25%, transparent);
+    }
+    .brand h1{font-size:20px; margin:0}
+    .subtitle{color:var(--muted); font-size:14px}
+
+    .grid{display:grid; grid-template-columns: 1fr; gap:16px;}
+    @media(min-width: 1120px){ .grid{grid-template-columns: 1.1fr 1fr;} }
+
+    .card{
+      background: linear-gradient(180deg, color-mix(in oklab, var(--card) 92%, transparent), color-mix(in oklab, var(--card-2) 92%, transparent));
+      border:1px solid var(--border-soft); border-radius:14px; padding:16px; backdrop-filter: blur(6px);
+      box-shadow: 0 8px 24px var(--shadow);
+    }
+    .card h2{margin:0 0 12px 0; font-size:18px}
+    .section{display:flex; flex-direction:column; gap:12px}
+    label{font-weight:600}
+    input[type="file"], select, button, textarea, input[type="text"]{
+      width:100%; border-radius:10px; border:1px solid var(--border);
+      background: var(--surface); color:var(--text); padding:10px 12px;
+    }
+    textarea{min-height:120px; resize:vertical}
+    button{
+      cursor:pointer; font-weight:600; letter-spacing:.25px;
+      background: var(--btn-bg); border:1px solid var(--btn-border);
+      transition:.2s transform ease, .2s filter ease, .2s background ease;
+    }
+    button:hover{transform: translateY(-1px); filter: brightness(1.06)}
+    .actions{display:flex; gap:8px; flex-wrap:wrap}
+    .btn-primary{background: linear-gradient(135deg, var(--accent), var(--accent-2)); border:none; color:white}
+    .btn-neutral{background: var(--surface); border:1px solid var(--border); color:var(--muted)}
+    .btn-ghost{background: var(--surface); border:1px dashed var(--border); color:var(--muted)}
+    .pill{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted); font-size:12px; background:var(--surface);}
+    .muted{color:var(--muted)}
+    .code{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background:var(--surface); border:1px dashed var(--border); padding:8px 10px; border-radius:8px; display:none }
+    .footer{margin-top:20px; color:var(--muted); font-size:12px; text-align:center}
+
+    .kpi{display:flex; gap:10px; flex-wrap:wrap}
+    .kpi .card{
+      min-width:260px; background: var(--glass-bg); border:1px solid var(--glass-border);
+      box-shadow: 0 10px 40px rgba(0,0,0,.18); backdrop-filter: blur(var(--glass-blur)) saturate(130%);
+    }
+    .progress{width:100%; height:10px; background:var(--surface); border-radius:999px; overflow:hidden; border:1px solid var(--border)}
+    .progress > div{height:100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); width:0%}
+    .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0}
+
+    .dropzone{
+      border:2px dashed var(--border); background: color-mix(in oklab, var(--surface) 80%, transparent);
+      border-radius:12px; padding:14px; text-align:center; color:var(--muted);
+      transition: .2s ease border-color, .2s ease background;
+    }
+    .dropzone.is-dragover{ border-color: var(--accent-2); background: color-mix(in oklab, var(--accent-2) 12%, var(--surface)); color: var(--text); }
+
+    .badge{padding:2px 8px; border-radius:999px; font-size:12px; font-weight:700}
+    .opp-low{background: color-mix(in oklab, var(--accent) 15%, transparent); color:var(--success)}
+    .opp-mid{background: color-mix(in oklab, var(--warn) 15%, transparent); color:var(--warning)}
+    .opp-high{background: color-mix(in oklab, var(--danger) 15%, transparent); color:var(--error)}
+    .badge-mentor{background: rgba(99,102,241,.18); color:#a5b4fc}
+
+    @keyframes pulseCritical { 0%{ box-shadow:0 0 0 0 var(--pulse-color);} 70%{ box-shadow:0 0 0 12px rgba(0,0,0,0);} 100%{ box-shadow:0 0 0 0 rgba(0,0,0,0);} }
+    .pulse-core { animation: pulseCritical 1.8s infinite; border-radius: 10px; }
+
+    .legend{display:flex; gap:10px; align-items:center; flex-wrap:wrap; color:var(--muted); font-size:13px}
+    .legend .dot{width:12px; height:12px; border-radius:99px; display:inline-block}
+
+    .modal-backdrop{position:fixed; inset:0; background: rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; padding:16px; z-index:999}
+    .modal{max-width:760px; width:100%; background:var(--card); color:var(--text); border:1px solid var(--border-soft); border-radius:14px; box-shadow: 0 10px 40px var(--shadow); padding:16px; }
+    .modal h3{margin-top:0}
+    .chips{display:flex; gap:6px; flex-wrap:wrap}
+    .chip{font-size:12px; padding:4px 8px; border-radius:999px; background:var(--surface); border:1px solid var(--border); color:var(--muted)}
+    .evidence{background:var(--surface); border:1px solid var(--border-soft); border-radius:10px; padding:10px; margin:6px 0}
+
+    /* Gigs button tweak */
+    #gigsList .btn{display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:10px; line-height:1; white-space:nowrap}
+    #gigsList .btn::after{ content:"↗"; font-size:12px; opacity:.75; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand" aria-label="Identidade do produto">
+        <div class="brand-logo" aria-hidden="true"></div>
+        <div>
+          <h1>MVP 4 — Workforce Intelligence</h1>
+          <div class="subtitle">Oportunidades • Radar + Mercado • Autoavaliação • Timeline • PDI</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button id="btnSettings" class="pill" aria-label="Abrir configurações">⚙️ Configurações</button>
+        <button id="themeToggle" class="pill" aria-pressed="false" aria-label="Alternar tema">🌙 Modo escuro</button>
+        <div class="pill" title="Idioma">🌐 pt-BR</div>
+      </div>
+    </header>
+
+    <!-- Configurações (Dev Mode) -->
+    <div id="settingsModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal">
+        <h3 id="settingsTitle">Configurações</h3>
+        <label style="display:flex; gap:8px; align-items:center">
+          <input type="checkbox" id="chkDev" /> Ativar Modo Desenvolvedor (exibir JSON de extração)
+        </label>
+        <div class="actions" style="justify-content:flex-end; margin-top:12px">
+          <button id="btnCloseSettings">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" role="main">
+      <!-- 1) Upload -->
+      <section class="card section" aria-labelledby="sec-upload">
+        <h2 id="sec-upload">1) Upload e leitura de CV</h2>
+        <p class="muted">Arraste e solte um arquivo aqui, ou selecione manualmente. Aceita PDF, DOCX e TXT.</p>
+        <div id="dropZone" class="dropzone" role="button" tabindex="0" aria-label="Solte o arquivo do currículo aqui ou pressione Enter para selecionar">
+          📄 Arraste e solte o CV aqui — ou <strong>pressione Enter</strong> para escolher um arquivo
+        </div>
+        <input id="cvFile" type="file" accept=".pdf,.doc,.docx,.txt" aria-label="Enviar currículo" style="position:absolute; left:-9999px; width:1px; height:1px;" />
+        <div class="actions">
+          <button id="btnExtract" class="btn-primary">Processar CV (IA)</button>
+          <button id="btnSelf" title="Autoavaliação antes de ver a IA">Iniciar Autoavaliação</button>
+          <button id="btnClear" class="btn-neutral">Limpar</button>
+          <button id="btnExport">Exportar JSON</button>
+        </div>
+        <label for="cvText">Texto do CV (preview)</label>
+        <textarea id="cvText" placeholder="O texto extraído do CV aparecerá aqui. Você também pode colar/editar manualmente."></textarea>
+
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <span class="pill">Status: <span id="status" aria-live="polite" aria-atomic="true">Aguardando upload</span></span>
+          <div>
+            <label for="roleSelect" class="sr-only">Cargo atual</label>
+            <select id="roleSelect" aria-label="Cargo atual">
+              <option value="data-analyst">Analista de Dados</option>
+              <option value="planner" selected>Planner</option>
+              <option value="project-manager">Project Manager</option>
+              <option value="backend-dev">Desenvolvedor Backend</option>
+            </select>
+            <div class="muted">Cargo atual (salvo automaticamente)</div>
+          </div>
+          <div>
+            <label for="targetRoleSelect" class="sr-only">Cargo alvo</label>
+            <select id="targetRoleSelect" aria-label="Cargo alvo (próximo passo)">
+              <option value="data-manager">Gerente de Dados</option>
+              <option value="product-manager">Product Manager</option>
+              <option value="engineering-manager">Engineering Manager</option>
+              <option value="planner-senior">Planner Sênior</option>
+            </select>
+            <div class="muted">Cargo alvo — experimente! (simulador de carreira)</div>
+          </div>
+          <div>
+            <label for="marketRoleSelect" class="sr-only">Benchmark do Mercado</label>
+            <select id="marketRoleSelect" aria-label="Benchmark do Mercado">
+              <option value="none">Mercado: desativado</option>
+              <option value="data-manager">Mercado: Gerente de Dados</option>
+              <option value="product-manager">Mercado: Product Manager</option>
+              <option value="engineering-manager">Mercado: Engineering Manager</option>
+            </select>
+            <div class="muted">Camada de benchmark externo no radar</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2) Extração & Autoavaliação -->
+      <section class="card section" aria-labelledby="sec-skills">
+        <h2 id="sec-skills">2) Extração (IA) & Autoavaliação</h2>
+        <p class="muted">Convergência entre IA e humano. Você pode ajustar e justificar.</p>
+        <pre id="skillsJson" class="code" aria-live="polite" aria-atomic="true"></pre>
+
+        <div id="selfWrap" class="card" style="display:none;">
+          <div style="font-weight:700; margin-bottom:6px;">Autoavaliação</div>
+          <div id="selfForm" class="section"></div>
+          <div class="muted">Dica: arraste os sliders; o radar e as recomendações se atualizam na hora.</div>
+        </div>
+      </section>
+
+      <!-- 3) Radar + Readiness -->
+      <section class="card section" aria-labelledby="sec-radar" style="grid-column: 1 / -1;">
+        <h2 id="sec-radar">3) Visual de Oportunidades (Radar)</h2>
+        <div class="legend" style="display:flex; gap:12px; flex-wrap:wrap; align-items:center">
+          <span><span class="dot" style="background:#38bdf8"></span> Atual</span>
+          <span><span class="dot" style="background:#22c55e"></span> Esperado (Atual)</span>
+          <span><span class="dot" style="background:#f59e0b"></span> Esperado (Alvo)</span>
+          <span><span class="dot" style="background:#8b5cf6"></span> Mercado</span>
+        </div>
+
+        <div class="kpi" style="margin-top:6px">
+          <div class="card" style="flex:1">
+            <div class="muted">Progresso de carreira</div>
+            <div style="font-weight:700; font-size:18px"><span id="readinessText">Você está —% de se tornar o alvo</span></div>
+            <div class="progress"><div id="readinessBar" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div id="radarHardWrap">
+            <div class="muted">Hard Skills</div>
+            <radar-chart id="radarHard"></radar-chart>
+          </div>
+          <div id="radarSoftWrap">
+            <div class="muted">Soft/Comportamentais</div>
+            <radar-chart id="radarSoft"></radar-chart>
+          </div>
+        </div>
+
+        <div id="radarSkeleton" class="skeleton" style="display:none; margin-top:8px"></div>
+      </section>
+
+      <!-- 4) Grid Hard -->
+      <section class="card section" aria-labelledby="sec-grid-hard" style="grid-column: 1 / -1;">
+        <h2 id="sec-grid-hard">4) Oportunidades — Hard Skills</h2>
+        <div class="actions" style="justify-content:flex-end; gap:6px">
+          <button id="filterCritical" class="btn-ghost" title="Ver apenas críticas">Críticas</button>
+          <button id="filterDesirable" class="btn-ghost" title="Ver apenas desejáveis">Desejáveis</button>
+          <button id="filterAll" class="btn-ghost" title="Ver todas">Todas</button>
+        </div>
+        <skill-grid id="skillGridHard" data-mode="hard" aria-label="Grid Hard Skills" tabindex="0"></skill-grid>
+      </section>
+
+      <!-- 5) Grid Soft -->
+      <section class="card section" aria-labelledby="sec-grid-soft" style="grid-column: 1 / -1;">
+        <h2 id="sec-grid-soft">5) Oportunidades — Soft Skills</h2>
+        <skill-grid id="skillGridSoft" data-mode="soft" aria-label="Grid Soft Skills" tabindex="0"></skill-grid>
+      </section>
+
+      <!-- 6) Timeline -->
+      <section class="card section" aria-labelledby="sec-timeline" style="grid-column: 1 / -1;">
+        <h2 id="sec-timeline">6) Timeline de Experiência</h2>
+        <p class="muted">Clique na barra para ver onde/quando a skill foi usada.</p>
+        <exp-timeline id="expTimeline"></exp-timeline>
+      </section>
+
+      <!-- 7) Recomendações -->
+      <section class="card section" aria-labelledby="sec-recos" style="grid-column: 1 / -1;">
+        <h2 id="sec-recos">7) Recomendações de Trilhas</h2>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+          <select id="filterDur" style="max-width:200px">
+            <option value="all">Duração: todas</option>
+            <option value="short">Curto (≤10h)</option>
+            <option value="mid">Médio (11–15h)</option>
+            <option value="long">Longo (≥16h)</option>
+          </select>
+          <select id="filterCost" style="max-width:220px">
+            <option value="all">Custo: todos</option>
+            <option value="free">Gratuito</option>
+            <option value="covered">Coberto pela empresa</option>
+            <option value="paid">Pago</option>
+          </select>
+        </div>
+        <reco-list id="recosList"></reco-list>
+      </section>
+
+      <!-- 8) Gigs -->
+      <section class="card section" aria-labelledby="sec-gigs" style="grid-column: 1 / -1;">
+        <h2 id="sec-gigs">8) Oportunidades Internas (Gigs)</h2>
+        <div id="gigsList" class="section"></div>
+      </section>
+
+      <!-- KPIs auxiliares -->
+      <section class="section" style="grid-column: 1 / -1;">
+        <div class="kpi">
+          <div class="card">
+            <div class="muted">CVs processados</div>
+            <div style="font-size:20px; font-weight:700"><span id="kpiProcessed">0</span></div>
+            <div class="progress" aria-label="Progresso de CVs processados"><div id="kpiBar" style="width:0%"></div></div>
+          </div>
+          <div class="card">
+            <div class="muted">Tempo médio por CV</div>
+            <div style="font-size:20px; font-weight:700"><span id="kpiTime">—</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9) PDI -->
+      <section class="card section" aria-labelledby="sec-pdi" style="grid-column: 1 / -1;">
+        <h2 id="sec-pdi">9) Plano de Desenvolvimento Individual (PDI)</h2>
+        <div id="pdiList" class="section"></div>
+        <div class="actions" style="justify-content:flex-end">
+          <button id="btnExportPDI" class="btn-ghost">Exportar PDI</button>
+        </div>
+      </section>
+    </div>
+
+    <p class="footer">MVP 4 • Oportunidades • Benchmark de Mercado • Simulador de carreira • ROI de trilhas • PDI</p>
+  </div>
+
+  <!-- Modais -->
+  <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <h3 id="modalTitle">Evidências da Skill</h3>
+      <div id="modalBody"></div>
+      <div class="actions" style="margin-top:12px; justify-content:flex-end;">
+        <button id="modalClose">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalJust" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalJustTitle">
+    <div class="modal">
+      <h3 id="modalJustTitle">Justificativa / Evidência Adicional</h3>
+      <div class="section">
+        <div class="chips" id="justChips"></div>
+        <label for="justText">Descreva sua justificativa:</label>
+        <textarea id="justText" placeholder="Ex.: Usei Python no projeto X (2022) para automatizar relatórios, não detalhado no CV."></textarea>
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <div style="flex:1">
+            <label for="justFonte">Fonte da evidência</label>
+            <select id="justFonte">
+              <option value="self">Auto-declaração</option>
+              <option value="certificate">Certificado validado</option>
+              <option value="test">Teste técnico</option>
+              <option value="other">Outro</option>
+            </select>
+          </div>
+          <div style="flex:1">
+            <label for="justUrl">URL (opcional)</label>
+            <input id="justUrl" placeholder="https://..." />
+          </div>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:12px; justify-content:flex-end;">
+        <button id="justCancel" class="btn-ghost">Cancelar</button>
+        <button id="justSave" class="btn-primary">Salvar justificativa</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalTline" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTLTitle">
+    <div class="modal">
+      <h3 id="modalTLTitle">Histórico da Skill</h3>
+      <div id="modalTLBody"></div>
+      <div class="actions" style="margin-top:12px; justify-content:flex-end;">
+        <button id="tlineClose">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /******************
+     * Estado & dados *
+     ******************/
+    const state = {
+      processed: 0, startTime: null, theme: 'dark',
+      devMode: false, loading: { extract:false, map:false },
+      skills: [], normalized: [], grid: [], gridTarget: [],
+      overrides: {}, self: {}, recos: [], gigs: [], pdi: [],
+      justifications: {}, lastJustSkill: null, marketRole: 'none'
+    };
+
+    const skillGridByRole = {
+      "planner": [
+        { skill: "SQL", categoria: "Dados", nivel_esperado: 3, peso: 5, impacto: 3 },
+        { skill: "Excel Avançado", categoria: "Ferramentas", nivel_esperado: 4, peso: 5, impacto: 2 },
+        { skill: "Power BI", categoria: "BI", nivel_esperado: 3, peso: 4, impacto: 2 },
+        { skill: "Forecasting", categoria: "Estatística", nivel_esperado: 2, peso: 4, impacto: 2 },
+        { skill: "Python", categoria: "Dados", nivel_esperado: 2, peso: 3, impacto: 2 },
+        { skill: "Oracle Retail", categoria: "ERP/Retalho", nivel_esperado: 2, peso: 5, impacto: 3 },
+        { skill: "Comunicação", categoria: "Soft", nivel_esperado: 3, peso: 3, impacto: 2 },
+        { skill: "Liderança", categoria: "Soft", nivel_esperado: 2, peso: 3, impacto: 2 }
+      ],
+      "planner-senior": [
+        { skill: "SQL", categoria: "Dados", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "Power BI", categoria: "BI", nivel_esperado: 4, peso: 4, impacto: 2 },
+        { skill: "Forecasting", categoria: "Estatística", nivel_esperado: 3, peso: 4, impacto: 2 },
+        { skill: "Python", categoria: "Dados", nivel_esperado: 3, peso: 3, impacto: 2 },
+        { skill: "Oracle Retail", categoria: "ERP/Retalho", nivel_esperado: 3, peso: 5, impacto: 3 },
+        { skill: "Comunicação", categoria: "Soft", nivel_esperado: 4, peso: 3, impacto: 2 },
+        { skill: "Liderança", categoria: "Soft", nivel_esperado: 3, peso: 3, impacto: 2 }
+      ],
+      "data-analyst": [
+        { skill: "SQL", categoria: "Dados", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "Python", categoria: "Dados", nivel_esperado: 3, peso: 5, impacto: 3 },
+        { skill: "Power BI", categoria: "BI", nivel_esperado: 3, peso: 4, impacto: 2 },
+        { skill: "Estatística", categoria: "Estatística", nivel_esperado: 3, peso: 4, impacto: 2 },
+        { skill: "Excel Avançado", categoria: "Ferramentas", nivel_esperado: 3, peso: 3, impacto: 1 },
+        { skill: "Comunicação", categoria: "Soft", nivel_esperado: 3, peso: 3, impacto: 2 },
+        { skill: "Apresentação", categoria: "Soft", nivel_esperado: 3, peso: 3, impacto: 2 }
+      ],
+      "project-manager": [
+        { skill: "Gestão de Projetos", categoria: "Gestão", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "Comunicação", categoria: "Soft", nivel_esperado: 4, peso: 4, impacto: 3 },
+        { skill: "Agile/Scrum", categoria: "Métodos", nivel_esperado: 3, peso: 4, impacto: 2 },
+        { skill: "Riscos", categoria: "Gestão", nivel_esperado: 3, peso: 3, impacto: 2 },
+        { skill: "Liderança", categoria: "Soft", nivel_esperado: 3, peso: 3, impacto: 2 }
+      ],
+      "backend-dev": [
+        { skill: "Java", categoria: "Backend", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "SQL", categoria: "Dados", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "APIs REST", categoria: "Backend", nivel_esperado: 3, peso: 4, impacto: 2 },
+        { skill: "Cloud", categoria: "Infra", nivel_esperado: 3, peso: 4, impacto: 2 }
+      ],
+      "data-manager": [
+        { skill: "SQL", categoria: "Dados", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "Python", categoria: "Dados", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "Power BI", categoria: "BI", nivel_esperado: 4, peso: 4, impacto: 2 },
+        { skill: "Estatística", categoria: "Estatística", nivel_esperado: 3, peso: 4, impacto: 2 },
+        { skill: "Gestão de Pessoas", categoria: "Soft", nivel_esperado: 4, peso: 4, impacto: 3 },
+        { skill: "Comunicação", categoria: "Soft", nivel_esperado: 4, peso: 4, impacto: 3 },
+        { skill: "Liderança", categoria: "Soft", nivel_esperado: 4, peso: 4, impacto: 3 }
+      ],
+      "product-manager": [
+        { skill: "Gestão de Produto", categoria: "Gestão", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "Comunicação", categoria: "Soft", nivel_esperado: 4, peso: 4, impacto: 3 },
+        { skill: "Dados", categoria: "Dados", nivel_esperado: 3, peso: 3, impacto: 2 },
+        { skill: "Liderança", categoria: "Soft", nivel_esperado: 4, peso: 4, impacto: 3 }
+      ],
+      "engineering-manager": [
+        { skill: "Gestão de Pessoas", categoria: "Soft", nivel_esperado: 4, peso: 5, impacto: 3 },
+        { skill: "Arquitetura de Software", categoria: "Backend", nivel_esperado: 3, peso: 4, impacto: 3 },
+        { skill: "Comunicação", categoria: "Soft", nivel_esperado: 4, peso: 4, impacto: 3 },
+        { skill: "Cloud", categoria: "Infra", nivel_esperado: 3, peso: 4, impacto: 2 }
+      ]
+    };
+
+    const marketBenchmarks = {
+      "data-manager": [
+        { skill:"SQL", nivel:4 }, { skill:"Python", nivel:4 }, { skill:"Power BI", nivel:4 },
+        { skill:"Estatística", nivel:3 }, { skill:"Gestão de Pessoas", nivel:4 }, { skill:"Comunicação", nivel:4 }, { skill:"Liderança", nivel:4 }
+      ],
+      "product-manager": [
+        { skill:"Gestão de Produto", nivel:4 }, { skill:"Comunicação", nivel:4 }, { skill:"Liderança", nivel:4 }, { skill:"Dados", nivel:3 }
+      ],
+      "engineering-manager": [
+        { skill:"Gestão de Pessoas", nivel:4 }, { skill:"Arquitetura de Software", nivel:3 }, { skill:"Comunicação", nivel:4 }, { skill:"Cloud", nivel:3 }
+      ]
+    };
+
+    const skillRarity = { "Oracle Retail":5,"Forecasting":18,"Power BI":55,"SQL":70,"Python":40,"Comunicação":95,"Liderança":30 };
+
+    const learningCatalog = [
+      { id: "udemy-sql-bootcamp", nome: "The Complete SQL Bootcamp", fonte: "Udemy", duracao: "12–15h", skills: ["SQL"], cost:"paid",    peers: 3 },
+      { id: "linkedin-powerbi",   nome: "Power BI: Dashboards para Negócios", fonte: "LinkedIn Learning", duracao: "8–10h", skills: ["Power BI"], cost:"covered", peers: 4 },
+      { id: "coursera-forecasting", nome: "Business Forecasting", fonte: "Coursera", duracao: "10–12h", skills: ["Forecasting","Estatística"], cost:"covered", peers: 2 },
+      { id: "oracle-retail-intro",  nome: "Introdução ao Oracle Retail", fonte: "Trilha Interna", duracao: "6–8h", skills: ["Oracle Retail"], cost:"free", peers: 1 },
+      { id: "excel-advanced",       nome: "Excel Avançado para Negócios", fonte: "Trilha Interna", duracao: "12–16h", skills: ["Excel Avançado"], cost:"free", peers: 5 },
+      { id: "python-data",          nome: "Python para Análise de Dados", fonte: "Coursera", duracao: "15–20h", skills: ["Python"], cost:"covered", peers: 6 },
+      { id: "communication-adv",    nome: "Comunicação Efetiva para Gestores", fonte: "Trilha Interna", duracao: "6–8h", skills: ["Comunicação"], cost:"free", peers: 8 },
+      { id: "leadership-found",     nome: "Fundamentos de Liderança", fonte: "LinkedIn Learning", duracao: "6–8h", skills: ["Liderança"], cost:"covered", peers: 5 }
+    ];
+
+    const internalGigs = [
+      { id:"gig-1", titulo:"Taskforce de ROQ (Oracle Retail)", skills:["Oracle Retail","SQL"], area:"Supply", duracao:"4-6 semanas" },
+      { id:"gig-2", titulo:"Squad Forecasting Promoções", skills:["Forecasting","Power BI"], area:"Produto", duracao:"3-4 semanas" },
+      { id:"gig-3", titulo:"Mentoria Excel Avançado", skills:["Excel Avançado","Comunicação"], area:"RH/Learning", duracao:"2-3 semanas" },
+      { id:"gig-4", titulo:"Piloto Métricas Pessoas/IAF", skills:["Python","Comunicação"], area:"Dados", duracao:"6-8 semanas" }
+    ];
+
+    /******************
+     * Utils          *
+     ******************/
+    const $  = (sel) => document.querySelector(sel);
+    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+    function setStatus(t){ const el=$("#status"); if(el) el.textContent=t; }
+    function safeHTML(str){
+      return String(str).replace(/[&<>"']/g, s => (
+        {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]
+      ));
+    }
+    function readTXT(file){ return new Promise((resolve,reject)=>{ const r=new FileReader(); r.onload=()=>resolve(r.result); r.onerror=reject; r.readAsText(file,'utf-8'); }); }
+    function formatTS(){ const d=new Date(), p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
+    function isSoftCategory(cat){
+      const soft = ["Soft","Comportamental","Liderança","Gestão","Comunicação","Gestão de Pessoas","Apresentação"];
+      return soft.some(s => (cat||"").toLowerCase().includes(s.toLowerCase()));
+    }
+    function parseHours(str){ const m=str?.match(/(\d+)[^\d]+(\d+)\s*h/i); if(m) return (parseInt(m[1])+parseInt(m[2]))/2; const s=str?.match(/(\d+)\s*h/i); return s?parseInt(s[1]):0; }
+    const STORAGE_KEYS = { ROLE:'wip:lastRole', TARGET:'wip:targetRole', THEME:'wip:theme', OVERRIDES:'wip:overrides', SELF:'wip:self', PDI:'wip:pdi', JUST:'wip:just', DEV:'wip:dev' };
+    const save = (k,v)=>{ try{ localStorage.setItem(k, typeof v==='string'?v:JSON.stringify(v)); }catch{} };
+    const load = (k,def=null)=>{ try{ const v=localStorage.getItem(k); if(!v) return def; try{ return JSON.parse(v); }catch{ return v; } }catch{ return def; } };
+    const debounce = (fn, ms=180) => { let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; };
+
+    /******************
+     * IA mock        *
+     ******************/
+    function extractSnippets(text, term){
+      const lines = text.split(/\n|\r/).map(l=>l.trim()).filter(Boolean);
+      const lc = term.toLowerCase();
+      const hits = lines.filter(l => l.toLowerCase().includes(lc));
+      return hits.slice(0,3);
+    }
+    function mockExtractSkills(text){
+      const catalog = [
+        { skill_name:"SQL", categoria:"Dados"},
+        { skill_name:"Excel Avançado", categoria:"Ferramentas"},
+        { skill_name:"Power BI", categoria:"BI"},
+        { skill_name:"Forecasting", categoria:"Estatística"},
+        { skill_name:"Python", categoria:"Dados"},
+        { skill_name:"Oracle Retail", categoria:"ERP/Retalho"},
+        { skill_name:"Comunicação", categoria:"Soft"}
+      ];
+      const lower = text.toLowerCase();
+      let found = catalog
+        .filter(k => lower.includes(k.skill_name.toLowerCase().split(' ')[0]))
+        .map(k => {
+          const evidencias = extractSnippets(text, k.skill_name);
+          const base = evidencias.length ? 0.75 : 0.45;
+          const prof = Math.min(4, 1 + Math.floor(Math.random()*4));
+          const anos = Math.floor(Math.random()*7);
+          const conf = Math.min(1, base + (prof-1)*0.05 + (anos*0.02));
+          return { ...k, proficiencia_estimada: prof, anos_experiencia: anos, evidencias, fonte_no_texto: evidencias.length ? "snippets" : "heurística", confianca: Math.round(conf*100) };
+        });
+      if(found.length===0){
+        found = [
+          { skill_name:"SQL", categoria:"Dados", proficiencia_estimada:2, anos_experiencia:1, evidencias:[], confianca:50 },
+          { skill_name:"Excel Avançado", categoria:"Ferramentas", proficiencia_estimada:3, anos_experiencia:2, evidencias:[], confianca:55 }
+        ];
+      }
+      return found;
+    }
+    function inferSoftSkillsFromText(text, already){
+      const map = [
+        { re:/lider(a|ou|ança|ando|ar)/gi,        skill:"Liderança" },
+        { re:/comunic(a|ou|ação|ando|ar)/gi,      skill:"Comunicação" },
+        { re:/apresent(a|ou|ação)/gi,             skill:"Apresentação" },
+        { re:/negoci(a|ou|ação)/gi,               skill:"Negociação" },
+        { re:/colabor(a|ou|ação)|trabalh(o|ou)\s+em\s+equipe/gi, skill:"Colaboração" }
+      ];
+      const lower = text.toLowerCase();
+      const set = new Set((already||[]).map(s => (s.skill_name||s.skill)||""));
+      const results = [];
+      for(const m of map){
+        if(m.re.test(lower) && !set.has(m.skill)){
+          const ev = extractSnippets(text, m.skill);
+          const baseConf = ev.length ? 70 : 55;
+          results.push({ skill_name:m.skill, categoria:"Soft", proficiencia_estimada: ev.length?2:1, anos_experiencia:0, evidencias:ev, fonte_no_texto: ev.length?"snippets":"inferência", confianca: baseConf });
+        }
+      }
+      return results;
+    }
+
+    async function semanticMatch(query, candidates){
+      const tok = s=> (s||"").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(/[^a-z0-9+.]+/).filter(Boolean);
+      const q = new Set(tok(query));
+      let best=null,bestScore=-1;
+      for(const c of candidates){
+        const t = new Set(tok(c));
+        const inter = [...q].filter(x => t.has(x)).length;
+        const score = inter / Math.max(1, new Set([...q,...t]).size);
+        if(score > bestScore){ bestScore=score; best=c; }
+      }
+      return { best, score: bestScore };
+    }
+    async function normalizeSkills(skills, role){
+      const expected = (skillGridByRole[role] || []).map(e => e.skill);
+      const normalized = [];
+      for(const s of skills){
+        const { best } = await semanticMatch(s.skill_name, expected);
+        normalized.push({...s, skill_name: best || s.skill_name});
+      }
+      return normalized;
+    }
+
+    /******************
+     * Grid/Target    *
+     ******************/
+    function baseRow(exp, match, overrides, self){
+      const nivel_ia   = match ? Number(match.proficiencia_estimada) : 0;
+      const nivel_self = (self[exp.skill] != null) ? Number(self[exp.skill]) : null;
+      const nivel_atual= overrides[exp.skill] ?? (nivel_self ?? nivel_ia);
+      const confianca  = match?.confianca ?? null;
+      const evidencias = match?.evidencias ?? [];
+      const gap        = exp.nivel_esperado - nivel_atual;
+      const over       = gap < 0;
+      const severidade = Math.max(0, gap) * (exp.peso || 1) * (exp.impacto || 1);
+      const conflito   = (nivel_self != null && Math.abs(nivel_self - nivel_ia) >= 2);
+      return {
+        skill: exp.skill, categoria: exp.categoria,
+        nivel_esperado: exp.nivel_esperado, nivel_atual, gap, over,
+        peso: exp.peso, impacto: exp.impacto, severidade,
+        nivel_detectado: nivel_ia, nivel_self, confianca, evidencias,
+        fonte: match?.fonte_no_texto ?? null,
+        nivel_esperado_target: null, delta_promocao: null, impacto_target: null, peso_target: null, severidade_target: null,
+        conflito
+      };
+    }
+    function buildGrid(normalized, role, overrides = {}, self = {}){
+      const expected = skillGridByRole[role] || [];
+      return expected.map(exp => {
+        const match = normalized.find(s => s.skill_name.toLowerCase() === exp.skill.toLowerCase());
+        return baseRow(exp, match, overrides, self);
+      });
+    }
+    function buildGridTarget(currentGrid, targetRole){
+      const targetExp = skillGridByRole[targetRole] || [];
+      const mapTarget = Object.fromEntries(targetExp.map(e => [e.skill, e]));
+      return currentGrid.map(r => {
+        const t = mapTarget[r.skill];
+        const nivel_esperado_target = t ? t.nivel_esperado : r.nivel_esperado;
+        const delta_promocao = nivel_esperado_target - r.nivel_atual;
+        const impacto_t = t ? t.impacto : r.impacto;
+        const peso_t    = t ? t.peso    : r.peso;
+        const severidade_target = Math.max(0, delta_promocao) * (peso_t||1) * (impacto_t||1);
+        return { ...r, nivel_esperado_target, delta_promocao, impacto_target: impacto_t, peso_target: peso_t, severidade_target };
+      });
+    }
+
+    /******************
+     * Readiness      *
+     ******************/
+    function computeReadiness(gridWithTarget){
+      let num = 0, den = 0;
+      for(const r of gridWithTarget){
+        const w = (r.peso_target ?? r.peso ?? 1) * (r.impacto_target ?? r.impacto ?? 1);
+        const target = r.nivel_esperado_target ?? r.nivel_esperado ?? 1;
+        const att = Math.max(0, Math.min(target, r.nivel_atual)) / (target || 1);
+        num += w * att; den += w;
+      }
+      return den ? Math.round((num/den)*100) : 0;
+    }
+    function renderReadiness(pct){
+      const text = $("#readinessText"), bar = $("#readinessBar");
+      const targetLabel = $("#targetRoleSelect")?.selectedOptions[0]?.textContent || "o alvo";
+      if(text) text.textContent = `Você está a ${pct}% de se tornar ${targetLabel}.`;
+      if(bar)  bar.style.width  = pct + "%";
+    }
+
+    /******************
+     * Recomendações  *
+     ******************/
+    function parseHoursRange(hstr){ const m=hstr?.match(/(\d+)[^\d]+(\d+)/); if(m) return [(+m[1]),(+m[2])]; const s=hstr?.match(/(\d+)/); return s?[(+s[1]),(+s[1])]:[0,0]; }
+    function recommendByGaps(gridWithTarget, role, targetRole){
+      const lacking = gridWithTarget
+        .map(r => ({...r, score: (Math.max(0,r.gap) * r.peso * r.impacto) + (Math.max(0,r.delta_promocao) * (r.peso_target||r.peso) * (r.impacto_target||r.impacto))}))
+        .filter(r => r.score > 0)
+        .sort((a,b) => b.score - a.score);
+      const topSkills = lacking.slice(0,7).map(r => r.skill);
+      const recos = [];
+      for(const s of topSkills){
+        const matches = learningCatalog.filter(c => c.skills.includes(s));
+        if(matches.length){
+          const g = lacking.find(l => l.skill === s);
+          const gapTotal = Math.max(0,g.gap) + Math.max(0,g.delta_promocao||0);
+          for(const m of matches){
+            const [minH,maxH] = parseHoursRange(m.duracao);
+            const totalH = (minH+maxH)/2 || 8;
+            const weekly = 2; // 2h/semana
+            const weeks = Math.ceil(totalH/weekly);
+            const months = Math.ceil(weeks/4);
+            const lvlBoost = 1.5;
+            const roi = gapTotal ? Math.min(100, Math.round((lvlBoost/gapTotal)*100)) : 100;
+            recos.push({...m, priority: Math.min(5, 1 + Math.ceil((g.score)/5)), covers:s, why:`Reduz diretamente sua oportunidade em ${s}.`, roi, weeks, months, weekly});
+          }
+        }
+      }
+      const uniq=[], seen=new Set();
+      for(const r of recos){ if(!seen.has(r.id)){ seen.add(r.id); uniq.push(r); } }
+      return uniq.slice(0,8);
+    }
+    function applyRecoFilters(recos){
+      const fd = $("#filterDur")?.value || "all";
+      const fc = $("#filterCost")?.value || "all";
+      return recos.filter(r => {
+        const h = parseHours(r.duracao);
+        const okDur  = fd==="all" || (fd==="short" && h<=10) || (fd==="mid" && h>10 && h<=15) || (fd==="long" && h>=16);
+        const okCost = fc==="all" || r.cost===fc;
+        return okDur && okCost;
+      });
+    }
+
+    /******************
+     * Radar component*
+     ******************/
+    const radarTpl = document.createElement('template');
+    radarTpl.innerHTML = `<style>:host{display:block} canvas{width:100%; height:360px; max-height:42vh}</style><canvas></canvas>`;
+    class RadarChart extends HTMLElement{
+      constructor(){ super(); this.attachShadow({mode:'open'}).appendChild(radarTpl.content.cloneNode(true));
+        this.canvas=this.shadowRoot.querySelector('canvas'); this.ctx=this.canvas.getContext('2d');
+        this._data={labels:[], current:[], expected:[], expectedTarget:[], market:[], max:5};
+        this.resizeObserver=new ResizeObserver(()=> this.draw());
+      }
+      connectedCallback(){ this.resizeObserver.observe(this); this.draw(); }
+      disconnectedCallback(){ this.resizeObserver.disconnect(); }
+      set data(d){ this._data=d||this._data; this.draw(); }
+      get data(){ return this._data; }
+      draw(){
+        const { labels, current, expected, expectedTarget, market, max } = this._data;
+        const n = Math.max(labels.length, 3);
+        const dpi = window.devicePixelRatio || 1;
+        const w = this.clientWidth || 400, h = this.clientHeight || 360;
+        this.canvas.width = w*dpi; this.canvas.height = h*dpi; this.canvas.style.width=w+'px'; this.canvas.style.height=h+'px';
+        const ctx=this.ctx; ctx.setTransform(dpi,0,0,dpi,0,0); ctx.clearRect(0,0,w,h);
+        const cx=w/2, cy=h/2+10; const radius=Math.min(w,h)*0.36;
+
+        const pad = (arr)=>{ const a=arr.slice(); while(a.length<n) a.push(0); return a; };
+        const labs = labels.slice(); while(labs.length<n) labs.push('•');
+        const cur=pad(current), exp=pad(expected), tgt=pad(expectedTarget), mkt=pad(market||[]);
+
+        ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--border').trim()||'rgba(180,180,180,.3)';
+        for(let l=1;l<=5;l++){
+          const r=radius*(l/5); ctx.beginPath();
+          for(let i=0;i<n;i++){ const ang=(Math.PI*2*i/n)-Math.PI/2; const x=cx+r*Math.cos(ang), y=cy+r*Math.sin(ang); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+          ctx.closePath(); ctx.stroke();
+        }
+        ctx.font="12px system-ui, sans-serif"; ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--muted').trim()||'#888';
+        ctx.textAlign="center"; ctx.textBaseline="middle";
+        labs.forEach((lab,i)=>{ const ang=(Math.PI*2*i/n)-Math.PI/2; const x=cx+(radius+16)*Math.cos(ang), y=cy+(radius+16)*Math.sin(ang); ctx.fillText(lab,x,y); ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+radius*Math.cos(ang), cy+radius*Math.sin(ang)); ctx.stroke(); });
+
+        function poly(vals, stroke, g1, g2, alpha){
+          ctx.beginPath();
+          for(let i=0;i<n;i++){
+            const v=Math.max(0,Math.min(max,vals[i])); const r=radius*(v/max);
+            const ang=(Math.PI*2*i/n)-Math.PI/2; const x=cx+r*Math.cos(ang), y=cy+r*Math.sin(ang);
+            if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+          }
+          ctx.closePath();
+          const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,radius); grad.addColorStop(0,g1); grad.addColorStop(1,g2);
+          ctx.globalAlpha=alpha; ctx.fillStyle=grad; ctx.fill();
+          ctx.globalAlpha=1; ctx.strokeStyle=stroke; ctx.lineWidth=2; ctx.stroke();
+        }
+        poly(exp, '#22c55e','rgba(34,197,94,.18)','rgba(34,197,94,.05)', .12);
+        poly(tgt, '#f59e0b','rgba(245,158,11,.16)','rgba(245,158,11,.05)', .12);
+        if(mkt.some(v=>v>0)) poly(mkt,'#8b5cf6','rgba(139,92,246,.16)','rgba(139,92,246,.05)', .10);
+        poly(cur, '#38bdf8','rgba(56,189,248,.22)','rgba(56,189,248,.06)', .18);
+      }
+    }
+    customElements.define('radar-chart', RadarChart);
+
+    /******************
+     * Grid component *
+     ******************/
+    const tableTemplate = document.createElement('template');
+    tableTemplate.innerHTML = `
+      <style>
+        :host{display:block; overflow:auto; border-radius:10px; border:1px solid var(--border-soft)}
+        table{width:100%; border-collapse:collapse; font-size:14px; background:transparent}
+        th, td{border-bottom:1px solid var(--border-soft); padding:10px 8px; text-align:left; color:var(--text)}
+        .muted{color:var(--muted)}
+        .badge{padding:2px 8px; border-radius:999px; font-size:12px; font-weight:700}
+        .opp-low{background: color-mix(in oklab, var(--accent) 15%, transparent); color:var(--success)}
+        .opp-mid{background: color-mix(in oklab, var(--warn) 15%, transparent); color:var(--warning)}
+        .opp-high{background: color-mix(in oklab, var(--danger) 15%, transparent); color:var(--error)}
+        .badge-mentor{background: rgba(99,102,241,.18); color:#a5b4fc}
+        .inline-edit{display:flex; gap:8px; align-items:center}
+        .inline-edit input[type="range"]{flex:1}
+        .btn{cursor:pointer; padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text)}
+        .btn:hover{filter:brightness(1.06)}
+        .warn{color:var(--warning); font-weight:700}
+        .conflict{color:var(--error); font-weight:700}
+        .scarcity{color:#a5b4fc; font-weight:700; font-size:12px}
+      </style>
+      <table part="table">
+        <thead>
+          <tr>
+            <th scope="col">Skill</th>
+            <th scope="col">Categoria</th>
+            <th scope="col">Esperado</th>
+            <th scope="col">Alvo</th>
+            <th scope="col">Seu nível</th>
+            <th scope="col">Oportunidade</th>
+            <th scope="col">Δ Promo</th>
+            <th scope="col">Conf.</th>
+            <th scope="col">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="body"></tbody>
+      </table>
+    `;
+    class SkillGrid extends HTMLElement{
+      constructor(){ super(); this._rows=[]; this.attachShadow({mode:'open'}).appendChild(tableTemplate.content.cloneNode(true)); this.$body=this.shadowRoot.getElementById('body'); }
+      set data(rows){ this._rows = Array.isArray(rows) ? rows : []; this.render(); }
+      get data(){ return this._rows; }
+      render(){
+        this.$body.innerHTML = '';
+        for(const r of this._rows){
+          const tr = document.createElement('tr');
+          const badgeClass = r.gap < 0 ? "badge-mentor" : (r.gap === 0 ? "opp-low" : (r.gap === 1 ? "opp-mid" : "opp-high"));
+          const badgeText  = r.gap < 0 ? "Potencial Mentor" : (r.gap === 0 ? "Pronto para o Cargo" : (r.gap === 1 ? "Em Evolução" : "Oportunidade Alta"));
+          const warnLowConf = (r.confianca != null && r.confianca < 60);
+          const pulse = (r.gap >= 2 && (r.impacto||1) >= 3) ? 'pulse-core' : '';
+          const rare = (typeof skillRarity[r.skill] === 'number' && skillRarity[r.skill] <= 10) ? `<div class="scarcity" title="Escassez interna">Top ${skillRarity[r.skill]}% interno</div>` : '';
+          tr.className = pulse;
+          tr.innerHTML = `
+            <td>${safeHTML(r.skill)} ${r.conflito ? '<span class="conflict" title="Conflito IA x Autoavaliação">⚠</span>' : ''} ${rare}</td>
+            <td class="muted">${safeHTML(r.categoria)}</td>
+            <td>${r.nivel_esperado}</td>
+            <td>${r.nivel_esperado_target ?? '-'}</td>
+            <td>
+              <div class="inline-edit">
+                <span class="nivel-atual">${r.nivel_atual}</span>
+                <input type="range" min="0" max="5" step="1" value="${r.nivel_atual}" aria-label="Ajustar nível para ${safeHTML(r.skill)}" />
+              </div>
+            </td>
+            <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+            <td>${r.delta_promocao != null ? (r.delta_promocao > 0 ? `Faltam ${r.delta_promocao}` : 'Alcançado') : '-'}</td>
+            <td>${r.confianca != null ? (warnLowConf ? '<span class="warn" title="Baixa confiança, revise ou justifique">'+r.confianca+'%</span>' : (r.confianca+'%')) : '-'}</td>
+            <td>
+              <button class="btn btn-evidence" type="button">Evidências</button>
+              <button class="btn btn-justify"  type="button">Justificar</button>
+              <button class="btn btn-pdi"       type="button">Salvar no PDI</button>
+            </td>
+          `;
+          // Slider em tempo real
+          const slider = tr.querySelector('input[type="range"]');
+          const span = tr.querySelector('.nivel-atual');
+          const emit = debounce((val)=> this.dispatchEvent(new CustomEvent('level-adjusted', {bubbles:true, composed:true, detail:{ row: r, newLevel: Number(val) }})), 120);
+          slider.addEventListener('input', (e)=>{ span.textContent = e.target.value; emit(e.target.value); });
+
+          // Ações (eventos saem do ShadowTree)
+          tr.querySelector('.btn-evidence').addEventListener('click', ()=> this.dispatchEvent(new CustomEvent('show-evidence', {bubbles:true, composed:true, detail:{ row: r }})));
+          tr.querySelector('.btn-justify').addEventListener('click', ()=> this.dispatchEvent(new CustomEvent('open-justify',  {bubbles:true, composed:true, detail:{ row: r }})));
+          tr.querySelector('.btn-pdi').addEventListener('click',      ()=> this.dispatchEvent(new CustomEvent('save-pdi',     {bubbles:true, composed:true, detail:{ row: r }})));
+          this.$body.appendChild(tr);
+        }
+      }
+    }
+    customElements.define('skill-grid', SkillGrid);
+
+    /******************
+     * Reco component *
+     ******************/
+    const recoTemplate = document.createElement('template');
+    recoTemplate.innerHTML = `
+      <style>
+        :host{display:flex; flex-direction:column; gap:10px}
+        .card{ background: linear-gradient(180deg, color-mix(in oklab, var(--card) 92%, transparent), color-mix(in oklab, var(--card-2) 92%, transparent)); border:1px solid var(--border-soft); border-radius:14px; padding:12px; }
+        .muted{color:var(--muted)}
+        .pill{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; border:1px solid var(--border); color:var(--muted); font-size:12px; background:var(--surface);}
+        .why{margin-top:6px; font-size:13px; color:var(--muted)}
+      </style>
+      <div id="wrap"></div>
+    `;
+    class RecoList extends HTMLElement{
+      constructor(){ super(); this._items=[]; this.attachShadow({mode:'open'}).appendChild(recoTemplate.content.cloneNode(true)); this.$wrap=this.shadowRoot.getElementById('wrap'); }
+      set items(v){ this._items = Array.isArray(v) ? v : []; this.render(); }
+      get items(){ return this._items; }
+      render(){
+        this.$wrap.innerHTML = '';
+        if(this._items.length === 0){
+          const div = document.createElement('div'); div.className='muted'; div.textContent='Sem recomendações (ou filtros muito restritivos).';
+          this.$wrap.appendChild(div); return;
+        }
+        for(const r of this._items){
+          const div = document.createElement('div');
+          const tempo = `⏱️ ${r.weekly}h/sem • pronto em ~${r.months} ${r.months>1?'meses':'mês'}`;
+          const proof = r.peers ? ` • 👥 ${r.peers} colega(s) usaram` : '';
+          div.className='card';
+          div.innerHTML = `
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+              <div>
+                <div style="font-weight:700">${safeHTML(r.nome)}</div>
+                <div class="muted">${safeHTML(r.fonte)} • ${safeHTML(r.duracao)} • cobre: <strong>${safeHTML(r.covers)}</strong> • ${r.cost==='free'?'Gratuito':(r.cost==='covered'?'Coberto':'Pago')}${proof}</div>
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <div class="pill" title="Prioridade">P${r.priority}</div>
+                <div class="pill" title="ROI (redução da oportunidade)">${r.roi}% ROI</div>
+              </div>
+            </div>
+            <div class="why">💡 ${safeHTML(r.why || '')} • ${tempo}</div>
+          `;
+          this.$wrap.appendChild(div);
+        }
+      }
+    }
+    customElements.define('reco-list', RecoList);
+
+    /******************
+     * Timeline comp. *
+     ******************/
+    const expTpl = document.createElement('template');
+    expTpl.innerHTML = `
+      <style>
+        :host{display:block}
+        .trow{display:grid; grid-template-columns: 200px 1fr 70px; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid var(--border-soft); cursor:pointer}
+        .ticon{font-size:18px}
+        .barwrap{height:10px; background:var(--surface); border:1px solid var(--border-soft); border-radius:999px; overflow:hidden}
+        .bar{height:100%; background: linear-gradient(90deg, var(--accent-2), var(--accent)); width:0%}
+        .yrs{text-align:right; color:var(--muted)}
+      </style>
+      <div id="wrap"></div>
+    `;
+    class ExpTimeline extends HTMLElement{
+      constructor(){ super(); this._items=[]; this.attachShadow({mode:'open'}).appendChild(expTpl.content.cloneNode(true)); this.$wrap=this.shadowRoot.getElementById('wrap'); }
+      set items(v){ this._items = Array.isArray(v) ? v : []; this.render(); }
+      render(){
+        const icons = { "SQL":"🗄️","Power BI":"📊","Python":"🐍","Excel Avançado":"📈","Forecasting":"📈","Oracle Retail":"🏬","Comunicação":"🗣️","Liderança":"🏁","Apresentação":"🖥️" };
+        this.$wrap.innerHTML = '';
+        const max = Math.max(1, ...this._items.map(i => i.anos_experiencia || 0), 5);
+        for(const it of this._items){
+          const row = document.createElement('div');
+          const pct = Math.min(100, Math.round(((it.anos_experiencia || 0)/max)*100));
+          const label = safeHTML(it.skill_name || it.skill);
+          row.className = 'trow';
+          row.innerHTML = `
+            <div><span class="ticon">${icons[label]||'🧩'}</span> ${label}</div>
+            <div class="barwrap"><div class="bar" style="width:${pct}%"></div></div>
+            <div class="yrs">${it.anos_experiencia || 0} ano(s)</div>
+          `;
+          row.addEventListener('click', () => {
+            this.dispatchEvent(new CustomEvent('timeline-detail', { bubbles:true, composed:true, detail:{ item: it }}));
+          });
+          this.$wrap.appendChild(row);
+        }
+      }
+    }
+    customElements.define('exp-timeline', ExpTimeline);
+
+    /******************
+     * Render helpers *
+     ******************/
+    function renderSkills(skills){ const el=$("#skillsJson"); if(el && state.devMode){ el.style.display='block'; el.textContent=JSON.stringify(skills,null,2);} }
+    function splitHardSoftRows(rows){ return { hard: rows.filter(r => !isSoftCategory(r.categoria)), soft: rows.filter(r => isSoftCategory(r.categoria)) }; }
+    function renderGrids(rows, view='all'){
+      let arr = rows.slice();
+      if(view==='critical'){   arr = arr.filter(r => (r.impacto>=3 || r.peso>=5)); }
+      if(view==='desirable'){  arr = arr.filter(r => !(r.impacto>=3 || r.peso>=5)); }
+      const {hard, soft} = splitHardSoftRows(arr);
+      $("#skillGridHard").data = hard;
+      $("#skillGridSoft").data = soft;
+    }
+    function toRadarData(rows, rowsTarget, benchmark=[]){
+      const tgtMap = Object.fromEntries(rowsTarget.map(r => [r.skill,r]));
+      const labels = rows.map(r => r.skill);
+      const current = rows.map(r => r.nivel_atual);
+      const expected = rows.map(r => r.nivel_esperado);
+      const expectedTarget = rows.map(r => (tgtMap[r.skill]?.nivel_esperado_target ?? r.nivel_esperado));
+      const marketMap = Object.fromEntries((benchmark||[]).map(b => [b.skill,b.nivel]));
+      const market = labels.map(s => marketMap[s] ?? 0);
+      return { labels,current,expected,expectedTarget,market,max:5 };
+    }
+    function renderRadars(rows, rowsTarget){
+      const {hard, soft} = splitHardSoftRows(rows);
+      const mkt = state.marketRole==='none' ? [] : (marketBenchmarks[state.marketRole] || []);
+      $("#radarHard").data = toRadarData(hard, rowsTarget, mkt);
+      const softBase = soft.length?soft:[{skill:'Comunicação', nivel_atual:0, nivel_esperado:3}];
+      $("#radarSoft").data = toRadarData(softBase, rowsTarget, mkt);
+    }
+    function renderRecos(recos){ $("#recosList").items = applyRecoFilters(recos); }
+    function renderTimeline(skills){ $("#expTimeline").items = skills; }
+    function renderKPIs(){
+      $("#kpiProcessed").textContent = String(state.processed);
+      $("#kpiBar").style.width = Math.min(100, state.processed * 20) + "%";
+      if(state.startTime){ $("#kpiTime").textContent = `${Math.max(1, Math.round((performance.now()-state.startTime)/1000))}s`; }
+    }
+    function renderGigs(gigs){
+      const wrap=$("#gigsList"); wrap.innerHTML='';
+      if(!gigs.length){ wrap.innerHTML = `<div class="muted">Sem gigs mapeados para as oportunidades atuais.</div>`; return; }
+      for(const g of gigs){
+        const div=document.createElement('div'); div.className='card';
+        div.innerHTML=`<div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+          <div><div style="font-weight:700">${safeHTML(g.titulo)}</div>
+          <div class="muted">Área: ${safeHTML(g.area)} • Duração: ${safeHTML(g.duracao)} • Skills: ${safeHTML(g.skills.join(', '))}</div></div>
+          <button class="btn" type="button">Quero participar</button>
+        </div>`;
+        wrap.appendChild(div);
+      }
+    }
+    function renderPDI(){
+      const wrap=$("#pdiList"); wrap.innerHTML='';
+      if(!state.pdi.length){ wrap.innerHTML = `<div class="muted">Nenhum item salvo no PDI ainda.</div>`; return; }
+      for(const item of state.pdi){
+        const div=document.createElement('div'); div.className='card';
+        div.innerHTML = `<div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; align-items:center">
+          <div><strong>${safeHTML(item.skill)}</strong> • Atual: ${item.nivel_atual} • Alvo: ${item.nivel_alvo}</div>
+          <div class="muted">Ação sugerida: ${safeHTML(item.acao || 'Trilha recomendada')} </div>
+        </div>`;
+        wrap.appendChild(div);
+      }
+    }
+
+    /******************
+     * Fluxo principal*
+     ******************/
+    async function runNormalizationAndMapping(auto=false){
+      $("#radarSkeleton").style.display='block';
+      const role=$("#roleSelect").value;
+      const targetRole=$("#targetRoleSelect").value;
+      state.normalized = await normalizeSkills(state.skills, role);
+      let grid = buildGrid(state.normalized, role, state.overrides, state.self);
+      grid = buildGridTarget(grid, targetRole);
+      state.grid=grid; state.gridTarget=grid.map(g=>({...g}));
+      renderGrids(grid);
+      renderRadars(grid, state.gridTarget);
+      state.recos = recommendByGaps(grid, role, targetRole); renderRecos(state.recos);
+      state.gigs  = internalGigs.filter(g => g.skills.some(s => grid.some(r => (r.skill===s && (r.gap>0 || r.delta_promocao>0))))); renderGigs(state.gigs);
+      renderReadiness(computeReadiness(grid));
+      if(!auto) setStatus("Oportunidades, radar e recomendações atualizados.");
+      $("#radarSkeleton").style.display='none';
+    }
+
+    /******************
+     * Upload / DnD   *
+     ******************/
+    const dropZone=$("#dropZone"), fileInput=$("#cvFile");
+    function highlightDrop(e,on){ e.preventDefault(); e.stopPropagation(); dropZone.classList.toggle('is-dragover', on); }
+    ['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, e=>highlightDrop(e,true)));
+    ['dragleave','dragend','drop'].forEach(ev => dropZone.addEventListener(ev, e=>highlightDrop(e,false)));
+    dropZone.addEventListener('drop', async e=>{ e.preventDefault(); const file=e.dataTransfer?.files?.[0]; if(file) await handleFile(file); });
+    dropZone.addEventListener('click', ()=> fileInput.click());
+    dropZone.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); fileInput.click(); } });
+    fileInput.addEventListener("change", async e => { const file=e.target.files?.[0]; if(!file) return; await handleFile(file); });
+
+    async function handleFile(file){
+      setStatus("Lendo arquivo..."); state.startTime=performance.now();
+      const ext=(file.name.split(".").pop()||"").toLowerCase();
+      try{
+        if(ext==='txt'){ $("#cvText").value = await readTXT(file); }
+        else {
+          $("#cvText").value = `[SIMULAÇÃO - substitua por texto extraído]
+Nome: Marco Lucas
+Cargo: Planner
+Experiências: Oracle Retail, RDF, IAF, TOTVS, Power BI, SQL, Excel avançado, Forecasting, Python
+Projetos: Liderou equipe de 4 analistas; apresentou resultados executivos; negociou prazos com fornecedores.
+Automatizou relatórios de BI com Python (Pandas); criação de dashboards no Power BI; consultas SQL avançadas.
+`;
+        }
+        setStatus(`Arquivo carregado: ${file.name}`); dropZone.focus();
+      }catch(err){ console.error(err); setStatus("Erro ao ler arquivo"); alert("Não foi possível ler o arquivo. Para PDF/DOCX, este MVP usa simulação local."); }
+    }
+
+    /******************
+     * Modais         *
+     ******************/
+    const modal = $("#modalBackdrop"), modalBody = $("#modalBody");
+    $("#modalClose").addEventListener('click', ()=> modal.style.display='none');
+    modal.addEventListener('click', (e)=>{ if(e.target===modal){ modal.style.display='none'; }});
+
+    const modalJust = $("#modalJust");
+    const justChips=$("#justChips"), justText=$("#justText"), justFonte=$("#justFonte"), justUrl=$("#justUrl");
+    $("#justCancel").addEventListener('click', ()=> modalJust.style.display='none');
+    modalJust.addEventListener('click', (e)=>{ if(e.target===modalJust){ modalJust.style.display='none'; }});
+    $("#justSave").addEventListener('click', ()=>{
+      const skill = state.lastJustSkill; if(!skill) return;
+      state.justifications[skill] = { text:(justText?.value||'').trim(), fonte: (justFonte?.value||'self'), url:(justUrl?.value||'').trim(), ts:new Date().toISOString() };
+      save(STORAGE_KEYS.JUST, state.justifications);
+      const bonus = state.justifications[skill].fonte==='certificate' ? 20 : (state.justifications[skill].fonte==='test' ? 15 : (state.justifications[skill].fonte==='self' ? -10 : 0));
+      for(const s of state.normalized){ if((s.skill_name||'').toLowerCase()===skill.toLowerCase()){ s.confianca=Math.max(0,Math.min(100,(s.confianca||60)+bonus)); } }
+      runNormalizationAndMapping(true);
+      setStatus(`Justificativa salva para "${skill}". Confiança ajustada.`);
+      modalJust.style.display='none';
+    });
+
+    const modalTline = $("#modalTline"), modalTLBody=$("#modalTLBody");
+    $("#tlineClose").addEventListener('click', ()=> modalTline.style.display='none');
+    modalTline.addEventListener('click', (e)=>{ if(e.target===modalTline){ modalTline.style.display='none'; }});
+    function openEvidenceModal(row){
+      const just = state.justifications[row.skill];
+      modalBody.innerHTML = `
+        <div class="chips">
+          <span class="chip"><strong>Skill:</strong> ${safeHTML(row.skill)}</span>
+          <span class="chip"><strong>Nível IA:</strong> ${row.nivel_detectado}</span>
+          <span class="chip"><strong>Nível Atual:</strong> ${row.nivel_atual}</span>
+          <span class="chip"><strong>Confiança:</strong> ${row.confianca != null ? row.confianca+'%' : '—'}</span>
+          ${row.over ? '<span class="chip" style="border-color:#818cf8; color:#a5b4fc"><strong>Potencial Mentor</strong></span>' : ''}
+          ${row.conflito ? '<span class="chip" style="border-color:var(--error); color:var(--error)"><strong>Conflito IA × Auto</strong></span>' : ''}
+        </div>
+        <div style="margin-top:8px">
+          <div class="muted">Evidências extraídas do CV:</div>
+          ${(row.evidencias && row.evidencias.length) ? row.evidencias.map(ev => `<div class="evidence">“${safeHTML(ev)}”</div>`).join('') : '<div class="evidence">Nenhum trecho forte encontrado — confiança menor. Revise ou Justifique.</div>'}
+        </div>
+        ${just ? `<div style="margin-top:8px"><div class="muted">Justificativa do colaborador:</div><div class="evidence">${safeHTML(just.text || '(sem texto)')}</div><div class="chips"><span class="chip"><strong>Fonte:</strong> ${safeHTML(just.fonte)}</span>${just.url?`<span class="chip"><a href="${safeHTML(just.url)}" target="_blank" rel="noopener">Evidência ↗</a></span>`:''}</div></div>` : ''}
+      `;
+      modal.style.display='flex';
+    }
+    function openJustifyModal(row){
+      state.lastJustSkill = row.skill;
+      justChips.innerHTML = `<span class="chip"><strong>Skill:</strong> ${safeHTML(row.skill)}</span><span class="chip"><strong>Seu nível:</strong> ${row.nivel_atual}</span>`;
+      justText.value  = state.justifications[row.skill]?.text  || '';
+      justFonte.value = state.justifications[row.skill]?.fonte || 'self';
+      justUrl.value   = state.justifications[row.skill]?.url   || '';
+      modalJust.style.display='flex';
+    }
+    function openTimelineModal(item){
+      const extractYear=(t)=>{ const m=t.match(/\b(20\d{2}|19\d{2})\b/g); return m?m.join(', '):null; };
+      const lines = (item.evidencias||[]).map(e => `<li>“${safeHTML(e)}” ${extractYear(e)?`<span class="muted">• ${extractYear(e)}</span>`:''}</li>`).join('') || '<li class="muted">Sem detalhes inferíveis.</li>';
+      modalTLBody.innerHTML = `<div class="chips"><span class="chip"><strong>Skill:</strong> ${safeHTML(item.skill_name||item.skill)}</span><span class="chip"><strong>Anos:</strong> ${item.anos_experiencia||0}</span></div><ol style="margin-top:8px; padding-left:18px">${lines}</ol>`;
+      modalTline.style.display='flex';
+    }
+
+    /******************
+     * Handlers       *
+     ******************/
+    $("#btnExtract").addEventListener("click", async () => {
+      $("#radarSkeleton").style.display='block';
+      setStatus("IA lendo o CV..."); state.loading.extract=true;
+      const text = $("#cvText").value.trim();
+      if(!text){ alert("Carregue um arquivo ou cole o texto do CV."); $("#radarSkeleton").style.display='none'; return; }
+      const extracted = mockExtractSkills(text);
+      const inferredSoft = inferSoftSkillsFromText(text, extracted);
+      state.skills = [...extracted, ...inferredSoft];
+      if(state.devMode){ $("#skillsJson").style.display='block'; }
+      renderSkills(state.skills);
+      renderTimeline(state.skills);
+      state.processed += 1; renderKPIs();
+      setStatus("Normalizando e mapeando automaticamente...");
+      await runNormalizationAndMapping(true);
+      setStatus("Tudo pronto! Explore as oportunidades ✨");
+      $("#radarSkeleton").style.display='none'; state.loading.extract=false;
+    });
+
+    $("#btnSelf").addEventListener("click", ()=>{
+      const role = $("#roleSelect").value;
+      const exp = skillGridByRole[role] || [];
+      const wrap = $("#selfForm"); wrap.innerHTML='';
+      for(const e of exp){
+        const row = document.createElement('div');
+        row.style.display='grid'; row.style.gridTemplateColumns='1fr auto'; row.style.gap='8px'; row.style.alignItems='center';
+        row.innerHTML = `<div><strong>${safeHTML(e.skill)}</strong> <span class="muted">(${safeHTML(e.categoria)})</span></div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="range" min="0" max="5" step="1" value="${state.self[e.skill] ?? 0}" data-skill="${safeHTML(e.skill)}" />
+          <span class="muted" data-out="${safeHTML(e.skill)}">${state.self[e.skill] ?? 0}</span>
+        </div>`;
+        wrap.appendChild(row);
+      }
+      wrap.querySelectorAll('input[type="range"]').forEach(sl=>{
+        const update = debounce((s,v)=>{ state.self[s]=v; save(STORAGE_KEYS.SELF,state.self); runNormalizationAndMapping(true); }, 120);
+        sl.addEventListener('input', (e)=>{ const s=e.target.getAttribute('data-skill'); const v=Number(e.target.value); wrap.querySelector(`[data-out="${CSS.escape(s)}"]`).textContent=v; update(s,v); });
+      });
+      $("#selfWrap").style.display='block';
+      setStatus("Autoavaliação habilitada (atualiza radar em tempo real).");
+    });
+
+    $("#btnNormalize")?.addEventListener("click", async () => {
+      if(!state.skills.length){ alert("Extraia as skills primeiro."); return; }
+      setStatus("Recalculando oportunidades..."); await runNormalizationAndMapping(false);
+    });
+
+    $("#btnClear").addEventListener("click", () => {
+      // Inputs
+      $("#cvText").value = "";
+      const pre=$("#skillsJson"); if(pre){ pre.textContent=""; if(!state.devMode) pre.style.display='none'; }
+
+      // Components
+      $("#skillGridHard").data = []; $("#skillGridSoft").data = []; $("#recosList").items = [];
+      $("#radarHard").data = {labels:[],current:[],expected:[],expectedTarget:[],market:[],max:5};
+      $("#radarSoft").data = {labels:[],current:[],expected:[],expectedTarget:[],market:[],max:5};
+      $("#expTimeline").items = [];
+      $("#gigsList").innerHTML = '<div class="muted">Sem gigs mapeados para as oportunidades atuais.</div>';
+      $("#selfWrap").style.display='none';
+
+      // State
+      state.skills=[]; state.normalized=[]; state.grid=[]; state.gridTarget=[]; state.recos=[]; state.gigs=[];
+      state.overrides={}; state.self={}; state.pdi=[]; renderPDI();
+      save(STORAGE_KEYS.OVERRIDES, state.overrides);
+      save(STORAGE_KEYS.SELF, state.self);
+      save(STORAGE_KEYS.PDI, state.pdi);
+
+      // Filtros/benchmarks
+      $("#filterDur").value='all'; $("#filterCost").value='all';
+      $("#marketRoleSelect").value='none'; state.marketRole='none';
+
+      // KPI/Readiness/Status
+      $("#kpiTime").textContent='—';
+      $("#readinessBar").style.width='0%';
+      $("#readinessText").textContent='Você está —% de se tornar o alvo.';
+      setStatus('Aguardando upload');
+    });
+
+    $("#btnExport").addEventListener("click", () => {
+      const payload = {
+        meta:{ exported_at:new Date().toISOString(), role:$("#roleSelect").value, target_role:$("#targetRoleSelect").value, theme: document.documentElement.getAttribute('data-theme')||'dark', version:'mvp4-fe-1.5.2' },
+        overrides:state.overrides, self_assessment:state.self, justifications:state.justifications,
+        skills_extracted:state.skills, skills_normalized:state.normalized, grid:state.grid,
+        recommendations: applyRecoFilters(state.recos), gigs:state.gigs, pdi:state.pdi
+      };
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`skills-opps-${formatTS()}.json`; document.body.appendChild(a); a.click(); a.remove();
+      setStatus("Exportação concluída.");
+    });
+
+    $("#btnExportPDI").addEventListener("click", () => {
+      const blob=new Blob([JSON.stringify({pdi:state.pdi, exported_at:new Date().toISOString()},null,2)],{type:'application/json'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`pdi-${formatTS()}.json`; document.body.appendChild(a); a.click(); a.remove();
+      setStatus("PDI exportado.");
+    });
+
+    // Grid events
+    function onAdjust(e){ const { row, newLevel } = e.detail || {}; if(!row) return; state.overrides[row.skill]=Number(newLevel); save(STORAGE_KEYS.OVERRIDES,state.overrides); runNormalizationAndMapping(true); setStatus(`Nível de "${row.skill}" ajustado para ${newLevel}.`); }
+    function onEvidence(e){ const { row } = e.detail || {}; if(!row) return; openEvidenceModal(row); }
+    function onJustify(e){ const { row } = e.detail || {}; if(!row) return; openJustifyModal(row); }
+    function onSavePDI(e){ const { row } = e.detail || {}; if(!row) return; const item={skill:row.skill, nivel_atual:row.nivel_atual, nivel_alvo: row.nivel_esperado_target ?? row.nivel_esperado, acao:`Trilha para ${row.skill}`}; state.pdi = state.pdi.filter(x=>x.skill!==item.skill).concat([item]); save(STORAGE_KEYS.PDI,state.pdi); renderPDI(); setStatus(`"${row.skill}" salvo no PDI.`); }
+    $("#skillGridHard").addEventListener('level-adjusted', onAdjust);
+    $("#skillGridSoft").addEventListener('level-adjusted', onAdjust);
+    $("#skillGridHard").addEventListener('show-evidence', onEvidence);
+    $("#skillGridSoft").addEventListener('show-evidence', onEvidence);
+    $("#skillGridHard").addEventListener('open-justify', onJustify);
+    $("#skillGridSoft").addEventListener('open-justify', onJustify);
+    $("#skillGridHard").addEventListener('save-pdi', onSavePDI);
+    $("#skillGridSoft").addEventListener('save-pdi', onSavePDI);
+
+    // Timeline detalhe
+    $("#expTimeline").addEventListener('timeline-detail', (e)=> openTimelineModal(e.detail.item));
+
+    // Filtros de recomendação
+    $("#filterDur").addEventListener('change', ()=> renderRecos(state.recos));
+    $("#filterCost").addEventListener('change', ()=> renderRecos(state.recos));
+
+    // Filtros do grid
+    let currentGridView='all';
+    $("#filterCritical").addEventListener('click', ()=>{ currentGridView='critical';  renderGrids(state.grid, currentGridView); });
+    $("#filterDesirable").addEventListener('click', ()=>{ currentGridView='desirable'; renderGrids(state.grid, currentGridView); });
+    $("#filterAll").addEventListener('click', ()=>{ currentGridView='all';         renderGrids(state.grid, currentGridView); });
+
+    // Persistência: cargo atual e alvo + dev mode
+    const savedRole   = load(STORAGE_KEYS.ROLE);
+    const savedTarget = load(STORAGE_KEYS.TARGET);
+    const savedDev    = load(STORAGE_KEYS.DEV,false);
+    if(savedRole   && [...$("#roleSelect").options].some(o=>o.value===savedRole))         $("#roleSelect").value=savedRole;
+    if(savedTarget && [...$("#targetRoleSelect").options].some(o=>o.value===savedTarget)) $("#targetRoleSelect").value=savedTarget;
+    state.devMode = !!savedDev; $("#chkDev").checked=state.devMode; $("#skillsJson").style.display = state.devMode ? 'block' : 'none';
+
+    $("#roleSelect").addEventListener('change', async (e)=>{ save(STORAGE_KEYS.ROLE, e.target.value);   if(state.skills.length){ await runNormalizationAndMapping(true); } });
+    $("#targetRoleSelect").addEventListener('change', async (e)=>{ save(STORAGE_KEYS.TARGET, e.target.value); if(state.skills.length){ await runNormalizationAndMapping(true); } });
+
+    // Tema claro/escuro com fallback se color-mix não existir
+    const themeToggle = $("#themeToggle");
+    const supportsColorMix = CSS.supports?.('color', 'color-mix(in srgb, black 50%, white)');
+    function applyTheme(theme){
+      document.documentElement.setAttribute('data-theme', theme); state.theme = theme;
+      themeToggle?.setAttribute('aria-pressed', theme==='dark' ? 'true' : 'false');
+      if(themeToggle) themeToggle.textContent = theme==='dark' ? '🌙 Modo escuro' : '☀️ Modo claro';
+      save(STORAGE_KEYS.THEME, theme);
+      if(!supportsColorMix){ document.body.style.background = theme==='dark' ? '#0f172a' : '#f8fafc'; } else { document.body.style.background=''; }
+      if(state.grid.length){ renderRadars(state.grid, state.gridTarget || state.grid); }
+    }
+    applyTheme(load(STORAGE_KEYS.THEME) || 'dark');
+    themeToggle?.addEventListener('click', ()=>{ const next = state.theme==='dark' ? 'light' : 'dark'; applyTheme(next); setStatus(`Tema alterado para ${next==='dark'?'escuro':'claro'}.`); });
+
+    // Configurações (abrir/fechar + clicar fora)
+    const settingsModal = $("#settingsModal");
+    $("#btnSettings")?.addEventListener('click', ()=> { settingsModal.style.display='flex'; });
+    $("#btnCloseSettings")?.addEventListener('click', ()=> { settingsModal.style.display='none'; });
+    settingsModal?.addEventListener('click', (e)=>{ if(e.target===settingsModal){ settingsModal.style.display='none'; }});
+    $("#chkDev")?.addEventListener('change', (e)=>{ state.devMode = e.target.checked; save(STORAGE_KEYS.DEV,state.devMode); const pre=$("#skillsJson"); if(pre) pre.style.display = state.devMode ? 'block' : 'none'; });
+
+    // KPIs iniciais
+    (function initKPIs(){ $("#kpiProcessed").textContent="0"; $("#kpiBar").style.width="0%"; $("#kpiTime").textContent="—"; })();
+  </script>
+</body>
+</html>

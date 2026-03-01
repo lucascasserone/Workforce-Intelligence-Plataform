@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Workforce Intelligence — Pro Edition</title>
+  <style>
+    :root {
+      --bg:#0f172a; --card:#111827; --card-2:#1e293b;
+      --muted:#94a3b8; --text:#e5e7eb;
+      --accent:#22c55e; --accent-2:#38bdf8; --accent-3:#f59e0b; --accent-4:#8b5cf6;
+      --danger:#ef4444; --border: rgba(148,163,184,.15);
+      --glass: rgba(255, 255, 255, 0.03);
+    }
+    html[data-theme="light"] {
+      --bg:#f8fafc; --card:#ffffff; --card-2:#f1f5f9; --muted:#64748b; --text:#0f172a;
+      --border: rgba(0,0,0,0.08);
+    }
+    body { margin:0; font-family: 'Inter', system-ui, -apple-system; background: var(--bg); color:var(--text); transition: 0.3s; line-height: 1.5; }
+    .container { max-width:1100px; margin:0 auto; padding:20px; }
+
+    /* NAVEGAÇÃO / STEPPER */
+    .stepper-container { margin-bottom: 30px; position: sticky; top: 0; background: var(--bg); z-index: 100; padding: 10px 0; }
+    .progress-bar-bg { height: 4px; background: var(--border); border-radius: 10px; margin-bottom: 15px; }
+    #progress-fill { height: 100%; width: 25%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: 10px; transition: 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .stepper { display: flex; justify-content: space-between; gap: 10px; }
+    .step-item { flex: 1; text-align: center; font-size: 12px; font-weight: 600; color: var(--muted); padding: 10px; border-radius: 8px; transition: 0.3s; cursor: pointer; }
+    .step-item.active { color: var(--accent-2); background: var(--glass); }
+    .step-item.completed { color: var(--accent); }
+    .step-microcopy { display: block; font-size: 10px; font-weight: 400; opacity: 0.7; margin-top: 4px; }
+    .step-item.disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* CARDS E UI */
+    .card { background: var(--card); border-radius: 16px; padding: 24px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    .upload-card { border: 2px dashed var(--border); padding: 60px 40px; text-align: center; border-radius: 20px; cursor: pointer; transition: 0.3s; }
+    .upload-card:hover { border-color: var(--accent-2); background: var(--glass); transform: translateY(-2px); }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white; border: none; padding: 14px 28px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.3s; }
+    .btn-primary:disabled { filter: grayscale(1); cursor: not-allowed; }
+    .pill { padding: 4px 12px; border-radius: 20px; font-size: 11px; background: var(--card-2); border: 1px solid var(--border); color: var(--text); cursor: pointer; }
+    .pill.active { border-color: var(--accent-2); color: var(--accent-2); }
+    
+    /* RADAR E TABELAS */
+    .radar-container { display: flex; justify-content: center; align-items: center; min-height: 300px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-size: 12px; color: var(--muted); padding: 10px; border-bottom: 1px solid var(--border); }
+    td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
+    input[type="range"] { width: 100px; accent-color: var(--accent-2); }
+
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .critical { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid var(--danger); }
+    .aligned { background: rgba(34, 197, 94, 0.15); color: var(--accent); border: 1px solid var(--accent); }
+
+    /* TIMELINE & PDI */
+    .timeline { position: relative; padding-left: 30px; margin: 20px 0; border-left: 2px solid var(--border); }
+    .timeline-item { position: relative; margin-bottom: 25px; }
+    .timeline-dot { position: absolute; left: -36px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent-2); border: 3px solid var(--bg); }
+    
+    .pdi-card { background: var(--card-2); border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); display: flex; gap: 15px; }
+    .impact-high { border-left: 4px solid var(--danger); }
+    .impact-medium { border-left: 4px solid var(--accent-3); }
+
+    /* UTILITÁRIOS */
+    .hidden { display: none; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+    .text-center { text-align: center; }
+    .loading-bar { width: 100%; height: 6px; background: var(--border); border-radius: 10px; overflow: hidden; margin-top: 15px; display: none; }
+    .loading-progress { height: 100%; width: 0%; background: var(--accent-2); transition: 0.3s; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+    .modal { background: var(--card); padding: 30px; border-radius: 24px; width: 90%; max-width: 450px; border: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <div>
+      <h2 style="margin:0; font-weight:800;">Workforce <span style="color:var(--accent-2)">Intelligence</span></h2>
+      <div style="font-size:11px; opacity:0.6; display:flex; align-items:center; gap:5px;">🔒 Criptografia de ponta a ponta • v5.2</div>
+    </div>
+    <div style="display:flex; gap:10px;">
+        <button id="btnExport" class="pill">📤 JSON</button>
+        <button id="themeToggle" style="background:none; border:none; cursor:pointer; font-size:20px;">🌙</button>
+    </div>
+  </header>
+
+  <div class="stepper-container">
+    <div class="progress-bar-bg"><div id="progress-fill"></div></div>
+    <nav class="stepper">
+      <div class="step-item active" id="st1" onclick="handleStepClick(1)">1. Entrada <span class="step-microcopy" id="m1">Em foco</span></div>
+      <div class="step-item disabled" id="st2" onclick="handleStepClick(2)">2. Competências <span class="step-microcopy" id="m2">Aguardando</span></div>
+      <div class="step-item disabled" id="st3" onclick="handleStepClick(3)">3. Trajetória <span class="step-microcopy" id="m3">Aguardando</span></div>
+      <div class="step-item disabled" id="st4" onclick="handleStepClick(4)">4. Plano de Ação <span class="step-microcopy" id="m4">Aguardando</span></div>
+    </nav>
+  </div>
+
+  <main>
+    <section id="step-1" class="app-step">
+      <div class="upload-card" id="dropZone">
+        <div style="font-size:48px; margin-bottom:15px;">📄</div>
+        <h3>Analise seu currículo com IA</h3>
+        <p class="muted">Arraste seu PDF aqui para mapear seus gaps instantaneamente.</p>
+        <input type="file" id="fileInput" class="hidden" accept=".pdf,.docx,.txt">
+        
+        <div class="loading-bar" id="loadingBar">
+          <div class="loading-progress" id="loadingProgress"></div>
+        </div>
+        <div id="uploadStatus" style="margin-top:15px; font-weight:600; color:var(--accent);" class="hidden"></div>
+      </div>
+      
+      <div class="card" style="margin-top:25px;">
+        <div class="grid-2">
+            <div>
+                <label class="step-microcopy">Cargo Atual</label>
+                <select id="roleActual" class="card" style="width:100%; margin-top:5px; padding:12px; background:var(--card-2); color:var(--text); border:1px solid var(--border);">
+                    <option value="planner">Planner Jr/Pleno</option>
+                    <option value="analyst">Analista de Dados</option>
+                </select>
+            </div>
+            <div>
+                <label class="step-microcopy">Cargo Alvo (Objetivo)</label>
+                <select id="roleTarget" class="card" style="width:100%; margin-top:5px; padding:12px; background:var(--card-2); color:var(--text); border:1px solid var(--border);">
+                    <option value="planner-senior">Planner Sênior</option>
+                    <option value="manager">Gerente de Marketing</option>
+                </select>
+            </div>
+        </div>
+        <button id="btnProcess" class="btn-primary" style="width:100%; margin-top:20px;" disabled>🚀 Iniciar Análise Preditiva</button>
+        <p class="text-center" style="font-size:12px; margin-top:15px; color:var(--muted);">⭐ +15.000 profissionais mapeados este mês.</p>
+      </div>
+    </section>
+
+    <section id="step-2" class="app-step hidden">
+      <div class="grid-2">
+        <div class="card text-center">
+            <h3>Radar de Gaps</h3>
+            <div id="radarBox" class="radar-container"></div>
+            <p class="step-microcopy">O gráfico compara seu nível (azul) com o cargo alvo (verde).</p>
+        </div>
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0;">Skills Detectadas</h3>
+                <div style="display:flex; gap:5px;">
+                    <button class="pill active" onclick="filterSkills('all', this)">Todas</button>
+                    <button class="pill" onclick="filterSkills('critical', this)">Críticas</button>
+                </div>
+            </div>
+            <table id="skillTable">
+                <thead><tr><th>Habilidade</th><th>Nível</th><th>Gap</th></tr></thead>
+                <tbody id="skillBody"></tbody>
+            </table>
+        </div>
+      </div>
+      <div style="text-align:right; margin-top:20px;">
+        <button class="btn-primary" onclick="goToStep(3)">Validar Trajetória ➡</button>
+      </div>
+    </section>
+
+    <section id="step-3" class="app-step hidden">
+      <div class="card">
+        <h3>Evidências e Fortalezas</h3>
+        <p class="muted">O que a IA encontrou no seu histórico para suportar suas notas:</p>
+        <div id="timeline" class="timeline"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-top:20px;">
+        <button class="pill" onclick="goToStep(2)">⬅ Ajustar Skills</button>
+        <button class="btn-primary" onclick="goToStep(4)">Gerar Plano de Ação ➡</button>
+      </div>
+    </section>
+
+    <section id="step-4" class="app-step hidden">
+        <div class="grid-2">
+            <div>
+                <h3>📚 Trilhas Recomendadas</h3>
+                <div id="courseList"></div>
+            </div>
+            <div>
+                <h3>🚀 Projetos e Gigs</h3>
+                <div id="gigList"></div>
+            </div>
+        </div>
+        <div class="card text-center" style="background:linear-gradient(rgba(34,197,94,0.1), transparent); margin-top:30px;">
+            <h2 style="margin-bottom:10px;">Pronto para evoluir?</h2>
+            <p class="muted">Seu Plano de Desenvolvimento Individual (PDI) foi customizado para seu objetivo.</p>
+            <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
+                <button class="btn-primary" onclick="window.print()">📥 Baixar PDF</button>
+                <button class="pill" style="padding:14px 28px;">📅 Mentoria</button>
+            </div>
+        </div>
+    </section>
+  </main>
+</div>
+
+<div id="modalJustify" class="modal-overlay">
+    <div class="modal">
+        <h3>Justificar Ajuste</h3>
+        <p class="muted" style="font-size:13px;">A IA sugeriu este nível com base no seu currículo. Por que você está alterando?</p>
+        <textarea id="justText" placeholder="Ex: Fiz um curso recente não listado no currículo..." style="width:100%; height:100px; background:var(--card-2); color:white; border-radius:12px; padding:12px; border:1px solid var(--border); font-family:inherit;"></textarea>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn-primary" style="flex:1" onclick="saveAjuste()">Confirmar</button>
+            <button class="pill" style="flex:1" onclick="closeModal()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* --- CORE LOGIC --- */
+const STORAGE_KEY = 'wi_pro_data';
+const $ = id => document.getElementById(id);
+
+let state = {
+    step: 1,
+    isAnalyzed: false,
+    skills: [],
+    justifications: {},
+    roleActual: 'planner',
+    roleTarget: 'planner-senior'
+};
+
+const DB = {
+    'planner': [
+        {id:'s1', name:'Estratégia de Mídia', level:3, target:5},
+        {id:'s2', name:'Análise de Dados', level:2, target:4},
+        {id:'s3', name:'Storytelling', level:4, target:5},
+        {id:'s4', name:'Liderança de Times', level:1, target:3},
+        {id:'s5', name:'Gestão de Verba', level:3, target:4}
+    ],
+    'courses': [
+        {skillId:'s2', title:'Data Science Mastery', provider:'Coursera', impact:'high'},
+        {skillId:'s4', title:'Liderança Alpha', provider:'LinkedIn Learning', impact:'medium'},
+        {skillId:'s1', title:'Media Strategy 360', provider:'Udacity', impact:'high'}
+    ]
+};
+
+/* --- NAVEGAÇÃO --- */
+function goToStep(n) {
+    if(n > 1 && !state.isAnalyzed) return;
+    state.step = n;
+    
+    document.querySelectorAll('.app-step').forEach(s => s.classList.add('hidden'));
+    $(`step-${n}`).classList.remove('hidden');
+    
+    updateStepper(n);
+    $('progress-fill').style.width = (n * 25) + '%';
+    window.scrollTo(0,0);
+    save();
+}
+
+function updateStepper(n) {
+    for(let i=1; i<=4; i++) {
+        const item = $(`st${i}`);
+        const micro = $(`m${i}`);
+        item.classList.remove('active', 'completed', 'disabled');
+        
+        if(i < n) {
+            item.classList.add('completed');
+            micro.innerText = '100% Concluído';
+        } else if(i === n) {
+            item.classList.add('active');
+            micro.innerText = 'Em foco';
+        } else {
+            if(!state.isAnalyzed) item.classList.add('disabled');
+            micro.innerText = 'Aguardando';
+        }
+    }
+}
+
+function handleStepClick(n) { if(state.isAnalyzed) goToStep(n); }
+
+/* --- SIMULAÇÃO DE UPLOAD --- */
+$('dropZone').onclick = () => $('fileInput').click();
+$('fileInput').onchange = (e) => {
+    if(e.target.files.length) {
+        $('loadingBar').style.display = 'block';
+        let p = 0;
+        const interval = setInterval(() => {
+            p += 10;
+            $('loadingProgress').style.width = p + '%';
+            if(p >= 100) {
+                clearInterval(interval);
+                $('uploadStatus').innerText = '✓ Currículo processado pela IA';
+                $('uploadStatus').classList.remove('hidden');
+                $('btnProcess').disabled = false;
+            }
+        }, 100);
+    }
+};
+
+/* --- PROCESSAMENTO --- */
+$('btnProcess').onclick = () => {
+    state.isAnalyzed = true;
+    state.roleActual = $('roleActual').value;
+    state.roleTarget = $('roleTarget').value;
+    // Carrega dados base do "servidor"
+    state.skills = JSON.parse(JSON.stringify(DB['planner']));
+    renderAll();
+    goToStep(2);
+};
+
+function renderAll() {
+    renderRadar();
+    renderTable();
+    renderTimeline();
+    renderPDI();
+}
+
+/* --- RENDERIZADORES --- */
+function renderRadar() {
+    const size = 300, center = size/2, r = 100, points = state.skills.length;
+    let polyActual = "", polyTarget = "", labels = "";
+
+    state.skills.forEach((s, i) => {
+        const angle = (Math.PI * 2 / points) * i - Math.PI / 2;
+        const tx = center + (s.target / 5) * r * Math.cos(angle);
+        const ty = center + (s.target / 5) * r * Math.sin(angle);
+        polyTarget += `${tx},${ty} `;
+        const ax = center + (s.level / 5) * r * Math.cos(angle);
+        const ay = center + (s.level / 5) * r * Math.sin(angle);
+        polyActual += `${ax},${ay} `;
+        const lx = center + (r + 35) * Math.cos(angle);
+        const ly = center + (r + 20) * Math.sin(angle);
+        labels += `<text x="${lx}" y="${ly}" fill="var(--muted)" font-size="9" text-anchor="middle" font-weight="600">${s.name.split(' ')[0]}</text>`;
+    });
+
+    $('radarBox').innerHTML = `
+        <svg width="${size}" height="${size}">
+            <circle cx="${center}" cy="${center}" r="${r}" fill="none" stroke="var(--border)" stroke-dasharray="4"/>
+            <circle cx="${center}" cy="${center}" r="${r/2}" fill="none" stroke="var(--border)" stroke-dasharray="2" opacity="0.5"/>
+            <polygon points="${polyTarget}" fill="rgba(34,197,94,0.1)" stroke="var(--accent)" stroke-width="1.5"/>
+            <polygon points="${polyActual}" fill="rgba(56,189,248,0.3)" stroke="var(--accent-2)" stroke-width="2.5"/>
+            ${labels}
+        </svg>
+    `;
+}
+
+function renderTable(filter = 'all') {
+    const body = $('skillBody');
+    body.innerHTML = "";
+    state.skills.forEach(s => {
+        const gap = s.target - s.level;
+        if(filter === 'critical' && gap < 2) return;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><div style="font-weight:600">${s.name}</div><div style="font-size:10px; color:var(--muted)">Alvo: Nível ${s.target}</div></td>
+            <td>
+                <input type="range" min="1" max="5" value="${s.level}" onchange="prepareAjuste('${s.id}', this.value)">
+                <span style="font-size:12px; font-weight:bold; margin-left:5px">${s.level}</span>
+            </td>
+            <td><span class="badge ${gap >= 2 ? 'critical' : 'aligned'}">${gap > 0 ? '-'+gap : 'OK'}</span></td>
+        `;
+        body.appendChild(row);
+    });
+}
+
+function renderTimeline() {
+    const evidences = [
+        "Mencionado em 3 projetos no currículo.",
+        "Consistência em metas de KPI nos últimos 2 anos.",
+        "Palavras-chave detectadas em certificações anexas."
+    ];
+    $('timeline').innerHTML = state.skills.map((s, idx) => `
+        <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <strong>${s.name}</strong>
+            <p class="muted" style="margin:4px 0 0 0; font-size:13px;">${evidences[idx % 3]}</p>
+        </div>
+    `).join('');
+}
+
+function renderPDI() {
+    const gaps = state.skills.filter(s => s.target > s.level);
+    
+    $('courseList').innerHTML = gaps.map(g => {
+        const c = DB.courses.find(course => course.skillId === g.id);
+        if(!c) return '';
+        return `
+            <div class="pdi-card ${c.impact === 'high' ? 'impact-high' : 'impact-medium'}">
+                <input type="checkbox" style="width:18px;">
+                <div style="flex:1">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <strong>${c.title}</strong>
+                        <span class="badge aligned" style="font-size:8px;">Sugestão IA</span>
+                    </div>
+                    <div class="muted" style="font-size:11px;">Plataforma: ${c.provider} • Impacto: ${c.impact === 'high' ? 'Alto' : 'Médio'}</div>
+                </div>
+            </div>
+        `;
+    }).join('') || '<p class="muted">Parabéns! Você não possui gaps críticos.</p>';
+
+    $('gigList').innerHTML = `
+        <div class="pdi-card" style="border-left: 4px solid var(--accent-4)">
+            <div style="flex:1">
+                <strong>Squad de Analytics (Marketing)</strong><br>
+                <small class="muted">Projeto prático • 4h/semana • 3 meses</small>
+            </div>
+            <button class="pill" style="border-color:var(--accent-4); color:var(--accent-4)">Candidatar</button>
+        </div>
+    `;
+}
+
+/* --- LOGICA DO MODAL --- */
+let activeAjuste = null;
+function prepareAjuste(id, val) {
+    activeAjuste = {id, val: parseInt(val)};
+    $('modalJustify').style.display = 'flex';
+}
+function closeModal() {
+    $('modalJustify').style.display = 'none';
+    renderTable(); // Volta o slider pro valor original se cancelar
+}
+function saveAjuste() {
+    const s = state.skills.find(x => x.id === activeAjuste.id);
+    s.level = activeAjuste.val;
+    state.justifications[s.id] = $('justText').value;
+    $('modalJustify').style.display = 'none';
+    $('justText').value = "";
+    renderAll();
+    save();
+}
+
+function filterSkills(type, btn) {
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    renderTable(type);
+}
+
+/* --- SISTEMA --- */
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function load() {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if(data) {
+        state = JSON.parse(data);
+        if(state.isAnalyzed) {
+            renderAll();
+            goToStep(state.step);
+        }
+    }
+}
+
+$('themeToggle').onclick = () => {
+    const theme = document.documentElement.getAttribute('data-theme');
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    $('themeToggle').innerText = newTheme === 'dark' ? '🌙' : '☀️';
+};
+
+$('btnExport').onclick = () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'wi_perfil.json'; a.click();
+};
+
+load();
+</script>
+</body>
+</html>
